@@ -47,13 +47,12 @@ class DMSFormatter(logging.Formatter):
     """DMS-specific formatting"""
 
     def format(self, record):
-        log_parts = []
-        log_parts.append(super(DMSFormatter, self).format(record))
-        for key in record._context:
-            log_parts.append('{0}={1}'.format(key, record._context[key]))
-        log_parts.append('msg="{}"'.format(record.getMessage()))
-        log_line = ' '.join(log_parts)
-        return log_line
+        log_parts = [super(DMSFormatter, self).format(record)]
+        log_parts.extend(
+            '{0}={1}'.format(key, record._context[key]) for key in record._context
+        )
+        log_parts.append(f'msg="{record.getMessage()}"')
+        return ' '.join(log_parts)
 
 
 # Define the common logging configuration

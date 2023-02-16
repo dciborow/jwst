@@ -43,7 +43,7 @@ def pool_file():
 
 @pytest.fixture(scope='module')
 def global_constraints():
-    constraint = DMSAttrConstraint(
+    return DMSAttrConstraint(
         name='asn_candidate',
         value=['.+o002.+'],
         sources=['asn_candidate'],
@@ -51,7 +51,6 @@ def global_constraints():
         is_acid=True,
         evaluate=True,
     )
-    return constraint
 
 
 def test_level3_productname_components_discovered():
@@ -113,8 +112,8 @@ def test_multiple_optelems(pool_file):
     pool = AssociationPool.read(pool_file)
     asns = generate(pool, rules)
     for asn in asns:
-        product_name = asn['products'][0]['name']
         if asn['asn_rule'] != 'Asn_Lv3MIRMRS':
+            product_name = asn['products'][0]['name']
             m = re.match(LEVEL3_PRODUCT_NAME_REGEX, product_name)
             assert m is not None
             try:

@@ -1,4 +1,5 @@
 """Test asn_gather functionality"""
+
 import pytest
 
 from pathlib import Path
@@ -11,7 +12,7 @@ from jwst.lib.file_utils import pushdir
 
 # Testing constants
 PRIMARY_STEM = 'primary'
-PRIMARY_NAME = PRIMARY_STEM + '_asn.json'
+PRIMARY_NAME = f'{PRIMARY_STEM}_asn.json'
 
 @pytest.fixture(scope='module')
 def source_folder(tmp_path_factory):

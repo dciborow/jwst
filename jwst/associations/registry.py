@@ -193,7 +193,7 @@ class AssociationRegistry(dict):
             if is_valid(rule, association)
         ]
 
-        if len(results) == 0:
+        if not results:
             raise AssociationNotValidError(
                 'Structure did not validate: "{}"'.format(association)
             )
@@ -252,12 +252,9 @@ class AssociationRegistry(dict):
                 continue
             if first:
                 break
-        if len(results) == 0:
+        if not results:
             raise lasterr
-        if first:
-            return results[0]
-        else:
-            return results
+        return results[0] if first else results
 
     def populate(self,
                  module,
@@ -432,19 +429,19 @@ class RegistryMarker:
             try:
                 events = func._asnreg_events
             except AttributeError:
-                events = list()
+                events = []
             events.append(event)
             RegistryMarker.mark(func)
             func._asnreg_role = 'callback'
             func._asnreg_events = events
             return func
+
         return decorator
 
     @staticmethod
     def schema(filename):
         """Mark a file as a schema source"""
-        schema = RegistryMarker.Schema(filename)
-        return schema
+        return RegistryMarker.Schema(filename)
 
     @staticmethod
     def utility(class_obj):
@@ -507,16 +504,14 @@ def get_marked(module, predicate=None, include_bases=False):
 
     for name, obj in getmembers(module, predicate):
         if isclass(obj):
-            for sub_name, sub_obj in get_marked(obj, predicate=is_method):
-                yield sub_name, sub_obj
+            yield from get_marked(obj, predicate=is_method)
             if RegistryMarker.is_marked(obj) or include_bases:
                 yield name, obj
         elif RegistryMarker.is_marked(obj):
             if ismodule(obj):
-                for sub_name, sub_obj in get_marked(
-                        obj, predicate=predicate, include_bases=include_bases
-                ):
-                    yield sub_name, sub_obj
+                yield from get_marked(
+                    obj, predicate=predicate, include_bases=include_bases
+                )
             else:
                 yield name, obj
 
@@ -534,5 +529,4 @@ def valid_class(obj):
     is_valid : bool
         True if the object could be considered a rule class
     """
-    is_valid = type(obj) is not EnumMeta and isclass(obj)
-    return is_valid
+    return type(obj) is not EnumMeta and isclass(obj)

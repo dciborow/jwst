@@ -49,7 +49,7 @@ def background_sub(input_model, bkg_list, sigma, maxiters):
     bkg_model = average_background(bkg_list, sigma, maxiters)
 
     # Subtract the average background from the member
-    log.debug(' subtracting avg bkg from {}'.format(input_model.meta.filename))
+    log.debug(f' subtracting avg bkg from {input_model.meta.filename}')
 
     result = subtract_images.subtract(input_model, bkg_model)
 
@@ -107,7 +107,7 @@ def average_background(bkg_list, sigma, maxiters):
 
             bkg_model.close()
 
-        if bkg_dim == 3:
+        elif bkg_dim == 3:
             # Sigma clip the bkg model's data and err along the integration axis
             sc_bkg_data = sigma_clip(bkg_model.data, sigma=sigma, maxiters=maxiters, axis=0)
             sc_bkg_err = sigma_clip(bkg_model.err * bkg_model.err, sigma=sigma, maxiters=maxiters, axis=0)
@@ -124,7 +124,7 @@ def average_background(bkg_list, sigma, maxiters):
             bkg_model.close()
 
     # Clip the background data
-    log.debug('clip with sigma={} maxiters={}'.format(sigma, maxiters))
+    log.debug(f'clip with sigma={sigma} maxiters={maxiters}')
     mdata = sigma_clip(cdata, sigma=sigma, maxiters=maxiters, axis=0)
 
     # Compute the mean of the non-clipped values
@@ -194,10 +194,10 @@ def subtract_wfss_bkg(input_model, bkg_filename, wl_range_name, mmag_extract=Non
     bkg_mean = robust_mean(bkg_ref.data[bkg_mask],
                            lowlim=lowlim, highlim=highlim)
 
-    log.debug("mean of [{}, {}] percentile grism image = {}"
-              .format(lowlim, highlim, sci_mean))
-    log.debug("mean of [{}, {}] percentile background image = {}"
-              .format(lowlim, highlim, bkg_mean))
+    log.debug(f"mean of [{lowlim}, {highlim}] percentile grism image = {sci_mean}")
+    log.debug(
+        f"mean of [{lowlim}, {highlim}] percentile background image = {bkg_mean}"
+    )
 
     result = input_model.copy()
     if bkg_mean != 0.:
@@ -233,10 +233,9 @@ def no_NaN(model, fill_value=0.):
     mask = np.isnan(model.data)
     if mask.sum(dtype=np.intp) == 0:
         return model
-    else:
-        temp = model.copy()
-        temp.data[mask] = fill_value
-        return temp
+    temp = model.copy()
+    temp.data[mask] = fill_value
+    return temp
 
 
 def mask_from_source_cat(input_model, wl_range_name, mmag_extract=None):
@@ -309,6 +308,4 @@ def robust_mean(x, lowlim=25., highlim=75.):
 
     limits = np.percentile(x, (lowlim, highlim))
     mask = np.logical_and(x >= limits[0], x <= limits[1])
-    mean_value = x[mask].mean(dtype=float)
-
-    return mean_value
+    return x[mask].mean(dtype=float)

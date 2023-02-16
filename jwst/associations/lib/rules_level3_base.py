@@ -132,9 +132,7 @@ class DMS_Level3_Base(DMSBaseMixin, Association):
         """Compare equality of two associations"""
         if isinstance(other, DMS_Level3_Base):
             result = self.data['asn_type'] == other.data['asn_type']
-            result = result and (self.member_ids == other.member_ids)
-            return result
-
+            return result and (self.member_ids == other.member_ids)
         return NotImplemented
 
     def __ne__(self, other):
@@ -177,11 +175,11 @@ class DMS_Level3_Base(DMSBaseMixin, Association):
 
         exposure = association._get_exposure()
         if exposure:
-            exposure = '-' + exposure
+            exposure = f'-{exposure}'
 
         subarray = association._get_subarray()
         if subarray:
-            subarray = '-' + subarray
+            subarray = f'-{subarray}'
 
         product_name = (
             'jw{program}-{acid}'
@@ -247,10 +245,7 @@ class DMS_Level3_Base(DMSBaseMixin, Association):
                     _DMS_POOLNAME_REGEX, self.data['asn_pool'].split('.')[0]
                 )
                 if parsed_name is not None:
-                    pool_meta = {
-                        'program_id': parsed_name.group(1),
-                        'version': parsed_name.group(2)
-                    }
+                    pool_meta = {'program_id': parsed_name[1], 'version': parsed_name[2]}
                     self.meta['pool_meta'] = pool_meta
 
         # Product-based updates
@@ -285,16 +280,15 @@ class DMS_Level3_Base(DMSBaseMixin, Association):
             member_exptype=exptype
         )
 
-        member = Member(
+        return Member(
             {
                 'expname': expname,
                 'exptype': exptype,
                 'exposerr': exposerr,
-                'asn_candidate': item['asn_candidate']
+                'asn_candidate': item['asn_candidate'],
             },
-            item=item
+            item=item,
         )
-        return member
 
     def make_fixedslit_bkg(self):
         """Add a background to a MIR_lrs-fixedslit observation"""
@@ -303,10 +297,7 @@ class DMS_Level3_Base(DMSBaseMixin, Association):
         # the background members, otherwise return the original association
         # to test for the string 'nod' we need to copy and pop the value out of the set
         if 'nod' not in self.constraints['patttype_spectarg'].found_values.copy().pop():
-            results = []
-            results.append(self)
-            return results
-
+            return [self]
         for product in self['products']:
             members = product['members']
             # Split out the science exposures
@@ -330,7 +321,7 @@ class DMS_Level3_Base(DMSBaseMixin, Association):
                 # Construct the name for the background file
                 bkg_name = remove_suffix(
                     splitext(split(science_exp['expname'])[1])[0])[0]
-                bkg_name = bkg_name+'_x1d.fits'
+                bkg_name = f'{bkg_name}_x1d.fits'
                 now_background = Member(science_exp)
                 now_background['expname'] = bkg_name
                 now_background['exptype'] = 'background'
@@ -366,10 +357,9 @@ class DMS_Level3_Base(DMSBaseMixin, Association):
         members = self.current_product['members']
         members.append(member)
         if member['exposerr'] not in _EMPTY:
-            logger.warning('Member {} has exposure error "{}"'.format(
-                item['filename'],
-                member['exposerr']
-            ))
+            logger.warning(
+                f"""Member {item['filename']} has exposure error "{member['exposerr']}\""""
+            )
 
         # Update meta info
         self.update_asn(item=item, member=member)
@@ -436,27 +426,17 @@ class DMS_Level3_Base(DMSBaseMixin, Association):
         return json_repr
 
     def __str__(self):
-        result_list = []
-        result_list.append(
-            '{} with {} products'.format(
-                self.asn_name,
-                len(self.data['products'])
-            )
+        result_list = [
+            f"{self.asn_name} with {len(self.data['products'])} products",
+            f"Rule={self.data['asn_rule']}",
+            self.data['constraints'],
+            'Products:',
+        ]
+        result_list.extend(
+            f"\t{product['name']} with {len(product['members'])} members"
+            for product in self.data['products']
         )
-        result_list.append(
-            'Rule={}'.format(self.data['asn_rule'])
-        )
-        result_list.append(self.data['constraints'])
-        result_list.append('Products:')
-        for product in self.data['products']:
-            result_list.append(
-                '\t{} with {} members'.format(
-                    product['name'],
-                    len(product['members'])
-                )
-            )
-        result = '\n'.join(result_list)
-        return result
+        return '\n'.join(result_list)
 
 
 @RegistryMarker.utility
@@ -502,33 +482,20 @@ class Utility():
             The Level 2b name
         """
         match = re.match(_LEVEL1B_REGEX, level1b_name)
-        if match is None or match.group('type') != '_uncal':
-            logger.warning((
-                'Item FILENAME="{}" is not a Level 1b name. '
-                'Cannot transform to Level 2b.'
-            ).format(
-                level1b_name
-            ))
+        if match is None or match['type'] != '_uncal':
+            logger.warning(
+                f'Item FILENAME="{level1b_name}" is not a Level 1b name. Cannot transform to Level 2b.'
+            )
             return level1b_name
 
         if member_exptype == 'background':
             suffix = 'x1d'
         else:
-            if exp_type in LEVEL2B_EXPTYPES:
-                suffix = 'cal'
-            else:
-                suffix = 'rate'
-
+            suffix = 'cal' if exp_type in LEVEL2B_EXPTYPES else 'rate'
         if is_tso:
             suffix += 'ints'
 
-        level2_name = ''.join([
-            match.group('path'),
-            '_',
-            suffix,
-            match.group('extension')
-        ])
-        return level2_name
+        return ''.join([match['path'], '_', suffix, match['extension']])
 
     @staticmethod
     def get_candidate_list(value):
@@ -545,14 +512,8 @@ class Utility():
         [ACID, ...]
             The list of parsed candidates.
         """
-        result = []
         evaled = evaluate(value)
-        if is_iterable(evaled):
-            result = [
-                ACID(v)
-                for v in evaled
-            ]
-        return result
+        return [ACID(v) for v in evaled] if is_iterable(evaled) else []
 
     @staticmethod
     @RegistryMarker.callback('finalize')
@@ -620,12 +581,7 @@ def dms_product_name_noopt(asn):
 
     instrument = asn._get_instrument()
 
-    product_name = 'jw{}-{}_{}_{}'.format(
-        asn.data['program'],
-        asn.acid.id,
-        target,
-        instrument
-    )
+    product_name = f"jw{asn.data['program']}-{asn.acid.id}_{target}_{instrument}"
     return product_name.lower()
 
 
@@ -649,7 +605,7 @@ def dms_product_name_sources(asn):
 
     subarray = asn._get_subarray()
     if subarray:
-        subarray = '-' + subarray
+        subarray = f'-{subarray}'
 
     product_name_format = (
         'jw{program}-{acid}'
@@ -847,9 +803,7 @@ class AsnMixin_AuxData:
         """
         NEVER_CHANGE = ['target_acquisition']
         exp_type = super().get_exposure_type(item, default=default)
-        if exp_type in NEVER_CHANGE:
-            return exp_type
-        return 'science'
+        return exp_type if exp_type in NEVER_CHANGE else 'science'
 
 
 class AsnMixin_Science(DMS_Level3_Base):
@@ -903,9 +857,11 @@ class AsnMixin_Science(DMS_Level3_Base):
         super(AsnMixin_Science, self).__init__(*args, **kwargs)
 
     def finalize(self):
-        if self.acid.type.lower() in MULTI_OBS_AC_TYPES:
-            if len(self.constraints['obs_num'].found_values) <= 1:
-                return
+        if (
+            self.acid.type.lower() in MULTI_OBS_AC_TYPES
+            and len(self.constraints['obs_num'].found_values) <= 1
+        ):
+            return
 
         return super(AsnMixin_Science, self).finalize()
 

@@ -93,7 +93,7 @@ class Association(MutableMapping):
             version_id=None,
     ):
 
-        self.data = dict()
+        self.data = {}
         self.run_init_hook = True
         self.meta = {}
 
@@ -139,9 +139,7 @@ class Association(MutableMapping):
         """
         asn = cls(version_id=version_id)
         matches, reprocess = asn.add(item)
-        if not matches:
-            return None, reprocess
-        return asn, reprocess
+        return (asn, reprocess) if matches else (None, reprocess)
 
     @property
     def asn_name(self):
@@ -183,16 +181,10 @@ class Association(MutableMapping):
         but the routine will return True.
         """
         if not hasattr(cls, 'schema_file'):
-            logger.warning(
-                'Cannot validate: {} has no schema. Presuming OK.'.format(cls)
-            )
+            logger.warning(f'Cannot validate: {cls} has no schema. Presuming OK.')
             return True
 
-        if isinstance(asn, cls):
-            asn_data = asn.data
-        else:
-            asn_data = asn
-
+        asn_data = asn.data if isinstance(asn, cls) else asn
         with open(cls.schema_file, 'r') as schema_file:
             asn_schema = json.load(schema_file)
 
@@ -208,8 +200,10 @@ class Association(MutableMapping):
             for member in members:
                 fpath, fname = os.path.split(member["expname"])
                 if len(fpath) > 0:
-                    err_str = "'expname' contains path, but should only be a filename."
-                    err_str += "  All input files should be in a single directory"
+                    err_str = (
+                        "'expname' contains path, but should only be a filename."
+                        + "  All input files should be in a single directory"
+                    )
                     err_str += ", so no path is needed."
                     logger.debug(err_str)
                     warnings.warn(err_str, UserWarning)
@@ -245,9 +239,7 @@ class Association(MutableMapping):
         if self.is_valid:
             return self.ioregistry[format].dump(self, **kwargs)
         else:
-            raise AssociationNotValidError(
-                'Association {} is not valid'.format(self)
-            )
+            raise AssociationNotValidError(f'Association {self} is not valid')
 
     @classmethod
     def load(
@@ -309,7 +301,7 @@ class Association(MutableMapping):
                 break
         else:
             raise AssociationNotValidError(
-                'Cannot translate "{}" to an association'.format(serialized)
+                f'Cannot translate "{serialized}" to an association'
             )
 
         # Validate
@@ -425,18 +417,17 @@ class Association(MutableMapping):
         """
         reprocess = []
         evaled_str = conditions['inputs'](item)
-        if conditions['value'] is not None:
-            if not meets_conditions(
-                    evaled_str, conditions['value']
-            ):
-                return False, reprocess
+        if conditions['value'] is not None and not meets_conditions(
+            evaled_str, conditions['value']
+        ):
+            return False, reprocess
 
         # At this point, the constraint has passed.
         # Fix the conditions.
         escaped_value = re.escape(evaled_str)
         conditions['found_values'].add(escaped_value)
         if conditions['value'] is None or \
-           conditions.get('force_unique', self.DEFAULT_FORCE_UNIQUE):
+               conditions.get('force_unique', self.DEFAULT_FORCE_UNIQUE):
             conditions['value'] = escaped_value
             conditions['force_unique'] = False
 
@@ -458,10 +449,7 @@ class Association(MutableMapping):
             `None` if a complete association cannot be produced.
 
         """
-        if self.is_valid:
-            return [self]
-        else:
-            return None
+        return [self] if self.is_valid else None
 
     def is_item_member(self, item):
         """Check if item is already a member of this association
@@ -556,18 +544,15 @@ def finalize(asns):
        from jwst.associations.association import finalize as generic_finalize
        RegistryMarker.callback('finalize')(generic_finalize)
     """
-    finalized_asns = list(filter(
-        lambda asn: asn is not None,
-        map(lambda asn: asn.finalize(), asns)
-    ))
-    return finalized_asns
+    return list(
+        filter(
+            lambda asn: asn is not None, map(lambda asn: asn.finalize(), asns)
+        )
+    )
 
 
 def make_timestamp():
-    timestamp = datetime.utcnow().strftime(
-        _TIMESTAMP_TEMPLATE
-    )
-    return timestamp
+    return datetime.utcnow().strftime(_TIMESTAMP_TEMPLATE)
 
 
 # Define default product name filling

@@ -189,28 +189,26 @@ class CubeData():
             for i in range(nchannels):
                 for j in range(nsubchannels):
                     nfiles = len(master_table.FileMap['MIRI'][valid_channel[i]][valid_subchannel[j]])
-                    if nfiles > 0:
                         # ______________________________________________________
                         # neither parameters are set
-                        if user_clen == 0 and user_slen == 0:
+                    if user_clen == 0 and user_slen == 0:
+                        if nfiles > 0:
                             self.all_channel.append(valid_channel[i])
                             self.all_subchannel.append(valid_subchannel[j])
-                        # channel was set by user but not sub-channel
-                        elif user_clen != 0 and user_slen == 0:
-                            if valid_channel[i] in self.channel:
-                                self.all_channel.append(valid_channel[i])
-                                self.all_subchannel.append(valid_subchannel[j])
-                        # sub-channel was set by user but not channel
-                        elif user_clen == 0 and user_slen != 0:
-                            if valid_subchannel[j] in self.subchannel:
-                                self.all_channel.append(valid_channel[i])
-                                self.all_subchannel.append(valid_subchannel[j])
-                        # both parameters set
-                        else:
-                            if (valid_channel[i] in self.channel and
-                                    valid_subchannel[j] in self.subchannel):
-                                self.all_channel.append(valid_channel[i])
-                                self.all_subchannel.append(valid_subchannel[j])
+                    elif user_clen != 0 and user_slen == 0:
+                        if nfiles > 0 and valid_channel[i] in self.channel:
+                            self.all_channel.append(valid_channel[i])
+                            self.all_subchannel.append(valid_subchannel[j])
+                    elif user_clen == 0:
+                        if nfiles > 0 and valid_subchannel[j] in self.subchannel:
+                            self.all_channel.append(valid_channel[i])
+                            self.all_subchannel.append(valid_subchannel[j])
+                    elif nfiles > 0 and (
+                        valid_channel[i] in self.channel
+                        and valid_subchannel[j] in self.subchannel
+                    ):
+                        self.all_channel.append(valid_channel[i])
+                        self.all_subchannel.append(valid_subchannel[j])
 
             log.info('The desired cubes cover the MIRI Channels: %s',
                      self.all_channel)
@@ -252,25 +250,21 @@ class CubeData():
 
             for i in range(nbands):
                 nfiles = len(master_table.FileMap['NIRSPEC'][valid_gwa[i]][valid_fwa[i]])
-                if nfiles > 0:
                     # _________________________________________________
                     # neither parameters are set
-                    if user_glen == 0 and user_flen == 0:
+                if user_glen == 0:
+                    if nfiles > 0:
                         self.all_grating.append(valid_gwa[i])
                         self.all_filter.append(valid_fwa[i])
-                    # __________________________________________________
-                    # grating was set by user but not filter
-                    elif user_glen != 0 and user_flen == 0:
-                        if valid_gwa[i] in self.grating:
-                            self.all_grating.append(valid_gwa[i])
-                            self.all_filter.append(valid_fwa[i])
-                    # __________________________________________________
-                    # both parameters set
-                    else:
-                        if (valid_fwa[i] in self.filter and
-                                valid_gwa[i] in self.grating):
-                            self.all_grating.append(valid_gwa[i])
-                            self.all_filter.append(valid_fwa[i])
+                elif user_flen == 0:
+                    if nfiles > 0 and valid_gwa[i] in self.grating:
+                        self.all_grating.append(valid_gwa[i])
+                        self.all_filter.append(valid_fwa[i])
+                elif nfiles > 0 and (
+                    valid_fwa[i] in self.filter and valid_gwa[i] in self.grating
+                ):
+                    self.all_grating.append(valid_gwa[i])
+                    self.all_filter.append(valid_fwa[i])
 
             number_filters = len(self.all_filter)
             number_gratings = len(self.all_grating)

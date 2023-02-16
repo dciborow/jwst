@@ -1,6 +1,7 @@
 """
 Test mkpool
 """
+
 from glob import glob
 import os
 import pytest
@@ -18,7 +19,7 @@ OPT_COLS = [('asn_candidate', [('a3001', 'coron')]),
             ('pntgtype', 'target_acquisition')]
 
 # Required column names
-REQUIRED_PARAMS = set(('program', 'filename'))
+REQUIRED_PARAMS = {'program', 'filename'}
 
 
 def test_hdu(exposures):
@@ -48,10 +49,7 @@ def test_mkpool(exposures):
     assert isinstance(pool, AssociationPool)
     assert REQUIRED_PARAMS.issubset(pool.colnames)
     assert len(pool) == len(exposures)
-    filenames = [
-        filename
-        for filename in pool['filename']
-    ]
+    filenames = list(pool['filename'])
     assert set(exposures) == set(filenames)
 
 
@@ -76,8 +74,7 @@ def test_opt_cols_cmdline(mkpool_cmdline, opt_cols):
 ])
 def exposures(request):
     exposure_path = helpers.t_path(request.param)
-    exposures = glob(os.path.join(exposure_path, '*.fits'))
-    return exposures
+    return glob(os.path.join(exposure_path, '*.fits'))
 
 
 @pytest.fixture(scope='module')
@@ -85,23 +82,17 @@ def mkpool_cmdline(exposures):
     """Create a pool with optional arguments from the commandline"""
     args = ['pool.csv']
     for column, value in OPT_COLS:
-        args.append(f'--{column.replace("_", "-")}')
-        args.append(f'{value}')
-    for exposure in exposures:
-        args.append(exposure)
-
+        args.extend((f'--{column.replace("_", "-")}', f'{value}'))
+    args.extend(iter(exposures))
     mkpool_args = from_cmdline(args)
-    pool = mkpool(**mkpool_args)
-    return pool
+    return mkpool(**mkpool_args)
 
 
 @pytest.fixture(scope='module')
 def mkpool_with_args(exposures):
     """Create a pool with all optional arguments specified"""
-    kargs = {column: value for column, value in OPT_COLS}
-    pool = mkpool(exposures, **kargs)
-
-    return pool
+    kargs = dict(OPT_COLS)
+    return mkpool(exposures, **kargs)
 
 
 def _test_opt_cols(mkpool_with_args, opt_cols):

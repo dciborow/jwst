@@ -58,11 +58,7 @@ def asn_gather(association, destination=None, exp_types=None, exclude_types=None
         source_folder = source_asn_path.parent
     else:
         source_folder = Path(source_folder)
-    if destination is None:
-        dest_folder = Path('./')
-    else:
-        dest_folder = Path(destination)
-
+    dest_folder = Path('./') if destination is None else Path(destination)
     # Create the associations
     source_asn = LoadAsAssociation.load(source_asn_path)
     dest_asn = LoadAsAssociation.load(source_asn_path)
@@ -70,13 +66,12 @@ def asn_gather(association, destination=None, exp_types=None, exclude_types=None
     # Create the new association
     dest_asn['products'] = []
     for src_product in source_asn['products']:
-        members = [
+        if members := [
             src_member
             for src_member in src_product['members']
-            if src_member['exptype'] not in exclude_types and \
-            (exp_types is None or src_member['exptype'] in exp_types)
-        ]
-        if members:
+            if src_member['exptype'] not in exclude_types
+            and (exp_types is None or src_member['exptype'] in exp_types)
+        ]:
             product = {
                 'name': src_product['name'],
                 'members': members

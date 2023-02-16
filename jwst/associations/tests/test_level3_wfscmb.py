@@ -16,8 +16,7 @@ def jitter_name_base(fname):
     Remove the post fix from a pool applicate file name.
     """
     sf = fname.split("_")
-    new_name = "_".join([el for el in sf[:-1]])
-    return new_name
+    return "_".join(list(sf[:-1]))
 
 
 def get_jitter_not_jitter(pool_path):
@@ -55,8 +54,7 @@ def get_expnames(asn):
     expnames = []
     for product in asn["products"]:
         members = product["members"]
-        for member in members:
-            expnames.append(member["expname"])
+        expnames.extend(member["expname"] for member in members)
     return expnames
 
 

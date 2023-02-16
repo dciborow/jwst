@@ -104,8 +104,7 @@ class Main():
                 continue
             not_in_asn[indexes] = False
 
-        orphaned = self.pool[not_in_asn]
-        return orphaned
+        return self.pool[not_in_asn]
 
     def configure(self, args=None, pool=None):
         """Configure to prepare for generation
@@ -126,10 +125,7 @@ class Main():
         self.parse_args(args, has_pool=pool)
         parsed = self.parsed
 
-        # Configure logging
-        logging_config = None
-        if parsed.DMS_enabled:
-            logging_config = DMS_config
+        logging_config = DMS_config if parsed.DMS_enabled else None
         logger = log_config(name=__package__, config=logging_config)
         logger.setLevel(parsed.loglevel)
         config.DEBUG = (parsed.loglevel != 0) and (parsed.loglevel <= logging.DEBUG)
@@ -139,7 +135,7 @@ class Main():
         logger.context.set('asn_candidate_ids', parsed.asn_candidate_ids)
 
         if pool is None:
-            logger.info('Reading pool {}'.format(parsed.pool))
+            logger.info(f'Reading pool {parsed.pool}')
             pool = AssociationPool.read(
                 parsed.pool, delimiter=parsed.delimiter,
                 format=parsed.pool_format,
@@ -159,8 +155,8 @@ class Main():
         #  3) Both discovered and all candidate associations.
         logger.info('Reading rules.')
         if not parsed.discover and\
-           not parsed.all_candidates and\
-           parsed.asn_candidate_ids is None:
+               not parsed.all_candidates and\
+               parsed.asn_candidate_ids is None:
             parsed.discover = True
             parsed.all_candidates = True
         if parsed.discover or parsed.all_candidates:
@@ -198,9 +194,7 @@ class Main():
 
         if parsed.discover:
             logger.debug(
-                '# asns found before discover filtering={}'.format(
-                    len(self.associations)
-                )
+                f'# asns found before discover filtering={len(self.associations)}'
             )
             self.associations = filter_discovered_only(
                 self.associations,
@@ -337,9 +331,10 @@ class Main():
             help='Format of the association files. Default: "%(default)s"'
         )
         parser.add_argument(
-            '--version', action='version',
-            version='%(prog)s {}'.format(__version__),
-            help='Version of the generator.'
+            '--version',
+            action='version',
+            version=f'%(prog)s {__version__}',
+            help='Version of the generator.',
         )
         parser.add_argument(
             '--no-finalize',
@@ -376,15 +371,16 @@ class Main():
             )
 
     def __str__(self):
-        result = []
-        result.append((
-            'There where {:d} associations '
-            'and {:d} orphaned items found.\n'
-            'Associations found are:'
-        ).format(len(self.associations), len(self.orphaned)))
-        for assocs in self.associations:
-            result.append(assocs.__str__())
-
+        result = [
+            (
+                (
+                    'There where {:d} associations '
+                    'and {:d} orphaned items found.\n'
+                    'Associations found are:'
+                ).format(len(self.associations), len(self.orphaned))
+            )
+        ]
+        result.extend(assocs.__str__() for assocs in self.associations)
         return '\n'.join(result)
 
 
@@ -440,7 +436,7 @@ def constrain_on_candidates(candidates):
         ])
     else:
         values = None
-    constraint = DMSAttrConstraint(
+    return DMSAttrConstraint(
         name='asn_candidate',
         sources=['asn_candidate'],
         value=values,
@@ -448,8 +444,6 @@ def constrain_on_candidates(candidates):
         is_acid=True,
         evaluate=True,
     )
-
-    return constraint
 
 
 def filter_discovered_only(
@@ -500,11 +494,7 @@ def filter_discovered_only(
     for candidate in candidate_list:
         if len(discover_list) == 0:
             break
-        unique_list = []
-        for discover in discover_list:
-            if discover != candidate:
-                unique_list.append(discover)
-
+        unique_list = [discover for discover in discover_list if discover != candidate]
         # Reset the discovered list to the new unique list
         # and try the next candidate.
         discover_list = unique_list

@@ -140,13 +140,12 @@ def compare_asn_lists(left_asns, right_asns):
             f'Right associations have duplicate products {right_duplicates}'
         ))
 
-    # Ensure that the product name lists are the same.
-    name_diff = left_product_names ^ right_product_names
-    if name_diff:
-        diffs.append(DifferentProductSetsError(
-            'Left and right associations do not share a common set of products: {}'
-            ''.format(name_diff)
-        ))
+    if name_diff := left_product_names ^ right_product_names:
+        diffs.append(
+            DifferentProductSetsError(
+                f'Left and right associations do not share a common set of products: {name_diff}'
+            )
+        )
 
     # Compare like product associations
     left_asns_by_product = {
@@ -225,9 +224,11 @@ def _compare_asns(left, right):
 
     # Assert that the same result type is the same.
     if left['asn_type'] != right['asn_type']:
-        diffs.append(TypeMismatchError(
-            'Type mismatch {} != {}'.format(left['asn_type'], right['asn_type'])
-        ))
+        diffs.append(
+            TypeMismatchError(
+                f"Type mismatch {left['asn_type']} != {right['asn_type']}"
+            )
+        )
 
     # Assert that the level of association candidate is the same.
     # Cannot guarantee value, but that the 'a'/'c'/'o' levels are similar.
@@ -270,7 +271,7 @@ def compare_membership(left, right):
             ''.format(left_len=len(products_left), right_len=len(products_right))
         ))
 
-    for left_idx, left_product in enumerate(products_left):
+    for left_product in products_left:
         left_product_name = components(left_product['name'])
         for right_idx, right_product in enumerate(products_right):
             if components(right_product['name']) != left_product_name:

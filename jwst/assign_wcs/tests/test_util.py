@@ -69,7 +69,9 @@ def test_create_grism_objects():
 
     required_fields = list(SkyObject()._fields)
     go_fields = grism_objects[0]._fields
-    assert all([a == b for a, b in zip(required_fields, go_fields)]), "Required fields mismatch for SkyObject and GrismObject"
+    assert all(
+        a == b for a, b in zip(required_fields, go_fields)
+    ), "Required fields mismatch for SkyObject and GrismObject"
 
     # create from QTable object
     tempcat = QTable.read(source_catalog, format='ascii.ecsv')

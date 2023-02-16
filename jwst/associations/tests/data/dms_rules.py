@@ -16,7 +16,7 @@ class Asn_DMS_Base(DMSBaseMixin, Association):
     def __init__(self, version_id=None):
         self.constraints = ConstraintTrue()
         super(Asn_DMS_Base, self).__init__(version_id=version_id)
-        self.data['members'] = list()
+        self.data['members'] = []
 
     def make_member(self, item):
         return item

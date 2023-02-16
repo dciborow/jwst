@@ -42,27 +42,10 @@ class FringeFitter:
         self.instrument_data = instrument_data
 
         # Options
-        if "oversample" in kwargs:
-            self.oversample = kwargs["oversample"]
-        else:
-            # default oversampling is 3
-            self.oversample = 3
-
-        if "find_rotation" in kwargs:
-            # can be True/False or 1/0
-            self.find_rotation = kwargs["find_rotation"]
-        else:
-            self.find_rotation = False
-
-        if "psf_offset_ff" in kwargs:  # if so do not find center of image in data
-            self.psf_offset_ff = kwargs["psf_offset_ff"]
-        else:
-            self.psf_offset_ff = None  # find center of image in data
-
-        if "npix" in kwargs:
-            self.npix = kwargs["npix"]
-        else:
-            self.npix = 'default'
+        self.oversample = kwargs.get("oversample", 3)
+        self.find_rotation = kwargs.get("find_rotation", False)
+        self.psf_offset_ff = kwargs.get("psf_offset_ff")
+        self.npix = kwargs.get("npix", 'default')
 
     def fit_fringes_all(self, input_model):
         """
@@ -146,7 +129,7 @@ class FringeFitter:
         """
         nrm.create_modelpsf()
 
-        output_model = datamodels.AmiLgModel(
+        return datamodels.AmiLgModel(
             fit_image=nrm.modelpsf,
             resid_image=nrm.residual,
             closure_amp_table=np.asarray(nrm.redundant_cas),
@@ -154,9 +137,8 @@ class FringeFitter:
             fringe_amp_table=np.asarray(nrm.fringeamp),
             fringe_phase_table=np.asarray(nrm.fringephase),
             pupil_phase_table=np.asarray(nrm.fringepistons),
-            solns_table=np.asarray(nrm.soln))
-
-        return output_model
+            solns_table=np.asarray(nrm.soln),
+        )
 
 
 class Calibrate:

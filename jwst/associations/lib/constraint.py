@@ -112,7 +112,7 @@ class SimpleConstraintABC(abc.ABC):
         """Copy ourselves"""
         return deepcopy(self)
 
-    def get_all_attr(self, attribute: str): # -> list[tuple[SimpleConstraint, typing.Any]]:
+    def get_all_attr(self, attribute: str):    # -> list[tuple[SimpleConstraint, typing.Any]]:
         """Return the specified attribute
 
         This method is meant to be overridden by classes
@@ -130,9 +130,7 @@ class SimpleConstraintABC(abc.ABC):
             an empty tuple is returned.
         """
         value = getattr(self, attribute)
-        if value is not None:
-            return [(self, value)]
-        return []
+        return [(self, value)] if value is not None else []
 
     # Make iterable to work with `Constraint`.
     # Since this is a leaf, simple return ourselves.
@@ -140,21 +138,10 @@ class SimpleConstraintABC(abc.ABC):
         yield self
 
     def __repr__(self):
-        result = '{}({})'.format(
-            self.__class__.__name__,
-            str(self.__dict__)
-        )
-        return result
+        return f'{self.__class__.__name__}({str(self.__dict__)})'
 
     def __str__(self):
-        result = '{}({})'.format(
-            self.__class__.__name__,
-            {
-                str_attr: getattr(self, str_attr)
-                for str_attr in self._str_attrs
-            }
-        )
-        return result
+        return f'{self.__class__.__name__}({{str_attr: getattr(self, str_attr) for str_attr in self._str_attrs}})'
 
 
 class ConstraintTrue(SimpleConstraintABC):
@@ -304,14 +291,11 @@ class SimpleConstraint(SimpleConstraintABC):
         """
         source_value = self.sources(item)
 
-        satisfied = True
-        if self.value is not None:
-            satisfied = self.test(self.value, source_value)
+        satisfied = True if self.value is None else self.test(self.value, source_value)
         self.matched = satisfied
 
-        if self.matched:
-            if self.force_unique:
-                self.value = source_value
+        if self.matched and self.force_unique:
+            self.value = source_value
 
         # Determine reprocessing
         reprocess = []
@@ -465,12 +449,8 @@ class AttrConstraint(SimpleConstraintABC):
                 invalid_values=self.invalid_values
             )
         except KeyError:
-            if self.required and not self.force_undefined:
-                self.matched = False
-                return self.matched, reprocess
-            else:
-                self.matched = True
-                return self.matched, reprocess
+            self.matched = bool(not self.required or self.force_undefined)
+            return self.matched, reprocess
         else:
             if self.force_undefined:
                 self.matched = False
@@ -491,12 +471,8 @@ class AttrConstraint(SimpleConstraintABC):
                 return self.matched, reprocess
             value = str(evaled)
 
-        # Else, the constraint does have a value. Check against it.
         else:
-            if callable(self.value):
-                match_value = self.value()
-            else:
-                match_value = self.value
+            match_value = self.value() if callable(self.value) else self.value
             if not is_iterable(evaled):
                 evaled = [evaled]
             matched = []
@@ -647,9 +623,7 @@ class Constraint:
             self.constraints = [init]
         else:
             raise TypeError(
-                'Invalid initialization value type {}.'
-                '\nValid types are `SimpleConstraint`, `Constraint`,'
-                '\nor subclass.'.format(type(init))
+                f'Invalid initialization value type {type(init)}.\nValid types are `SimpleConstraint`, `Constraint`,\nor subclass.'
             )
 
         # Give some defaults real meaning.
@@ -730,7 +704,7 @@ class Constraint:
         """Copy ourselves"""
         return deepcopy(self)
 
-    def get_all_attr(self, attribute: str): # -> list[tuple[typing.Union[SimpleConstraint, Constraint], typing.Any]]:
+    def get_all_attr(self, attribute: str):    # -> list[tuple[typing.Union[SimpleConstraint, Constraint], typing.Any]]:
         """Return the specified attribute
 
         This method is meant to be overridden by classes
@@ -752,10 +726,8 @@ class Constraint:
         AttributeError
             If the attribute is not found.
         """
-        result = []
         value = getattr(self, attribute)
-        if value is not None:
-            result = [(self, value)]
+        result = [(self, value)] if value is not None else []
         for constraint in self.constraints:
             result.extend(constraint.get_all_attr(attribute))
 
@@ -796,11 +768,7 @@ class Constraint:
                     negative_reprocess = [reprocess]
 
         if not all_match:
-            if negative_reprocess is not None:
-                to_reprocess = negative_reprocess
-            else:
-                to_reprocess = []
-
+            to_reprocess = negative_reprocess if negative_reprocess is not None else []
         return all_match, to_reprocess
 
     @staticmethod
@@ -838,8 +806,7 @@ class Constraint:
 
     # Make iterable
     def __iter__(self):
-        for constraint in chain(*map(iter, self.constraints)):
-            yield constraint
+        yield from chain(*map(iter, self.constraints))
 
     # Index implementation
     def __getitem__(self, key):
@@ -854,31 +821,19 @@ class Constraint:
                 pass
             else:
                 return found
-        raise KeyError('Constraint {} not found'.format(key))
+        raise KeyError(f'Constraint {key} not found')
 
     def __repr__(self):
-        result = '{}(name={}).{}([{}])'.format(
-            self.__class__.__name__,
-            str(getattr(self, 'name', None)),
-            str(self.reduce.__name__),
-            ''.join([
-                repr(constraint)
-                for constraint in self.constraints
-            ])
-        )
-        return result
+        return f"{self.__class__.__name__}(name={str(getattr(self, 'name', None))}).{str(self.reduce.__name__)}([{''.join([repr(constraint) for constraint in self.constraints])}])"
 
     def __setitem__(self, key, value):
         """Not implemented"""
         raise NotImplementedError('Cannot set constraints by index.')
 
     def __str__(self):
-        result = '\n'.join([
-            str(constraint)
-            for constraint in self
-            if constraint.name is not None
-        ])
-        return result
+        return '\n'.join(
+            [str(constraint) for constraint in self if constraint.name is not None]
+        )
 
 
 # ---------
@@ -908,8 +863,7 @@ def meets_conditions(value, conditions):
             condition,
             '$'
         ])
-        match = re.match(condition, value, flags=re.IGNORECASE)
-        if match:
+        if match := re.match(condition, value, flags=re.IGNORECASE):
             return True
     return False
 
@@ -941,5 +895,6 @@ def reprocess_multivalue(item, source, values, constraint):
         new_item = PoolRow(item)
         new_item[source] = str(value)
         reprocess_items.append(new_item)
-    process_list = (ProcessList(items=reprocess_items, trigger_constraints=[constraint.id]))
-    return process_list
+    return ProcessList(
+        items=reprocess_items, trigger_constraints=[constraint.id]
+    )

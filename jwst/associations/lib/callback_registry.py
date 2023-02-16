@@ -9,7 +9,7 @@ class CallbackRegistry():
     """Callback registry"""
 
     def __init__(self):
-        self.registry = dict()
+        self.registry = {}
 
     def add(self, event, callback):
         """Add a callback to an event"""
@@ -47,8 +47,7 @@ class CallbackRegistry():
         Hence, the callbacks will be called in the order registered.
 
         """
-        result = self.registry[event].reduce(*args)
-        return result
+        return self.registry[event].reduce(*args)
 
     def add_decorator(self, event):
         """Add callbacks by decoration

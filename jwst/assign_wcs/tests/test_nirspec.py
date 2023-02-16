@@ -84,11 +84,11 @@ def create_reference_files(datamodel):
     """
     Create a dict {reftype: reference_file}.
     """
-    refs = {}
     step = assign_wcs_step.AssignWcsStep()
-    for reftype in assign_wcs_step.AssignWcsStep.reference_file_types:
-        refs[reftype] = step.get_reference_file(datamodel, reftype)
-    return refs
+    return {
+        reftype: step.get_reference_file(datamodel, reftype)
+        for reftype in assign_wcs_step.AssignWcsStep.reference_file_types
+    }
 
 
 def create_nirspec_imaging_file():
@@ -368,10 +368,10 @@ def test_slit_projection_on_detector():
     hdul[0].header['DETECTOR'] = 'NRS2'
     im = datamodels.ImageModel(hdul)
 
-    refs = {}
-    for reftype in step.reference_file_types:
-        refs[reftype] = step.get_reference_file(im, reftype)
-
+    refs = {
+        reftype: step.get_reference_file(im, reftype)
+        for reftype in step.reference_file_types
+    }
     open_slits = nirspec.get_open_slits(im, refs)
     assert len(open_slits) == 1
     assert open_slits[0].name == "S200B1"

@@ -30,16 +30,15 @@ def _v23tosky(v2_ref, v3_ref, roll_ref, ra_ref, dec_ref, wrap_v2_at=180, wrap_lo
 
 
 def v23tosky(input_model, wrap_v2_at=180, wrap_lon_at=360):
-    m = _v23tosky(
+    return _v23tosky(
         v2_ref=input_model.meta.wcsinfo.v2_ref / 3600,
         v3_ref=input_model.meta.wcsinfo.v3_ref / 3600,
         roll_ref=input_model.meta.wcsinfo.roll_ref,
         ra_ref=input_model.meta.wcsinfo.ra_ref,
         dec_ref=input_model.meta.wcsinfo.dec_ref,
         wrap_v2_at=wrap_v2_at,
-        wrap_lon_at=wrap_lon_at
+        wrap_lon_at=wrap_lon_at,
     )
-    return m
 
 
 def compute_roll_ref(v2_ref, v3_ref, roll_ref, ra_ref, dec_ref, new_v2_ref, new_v3_ref):
@@ -105,9 +104,8 @@ def wcsinfo_from_model(input_model):
 
     """
     defaults = {'CRPIX': 0, 'CRVAL': 0, 'CDELT': 1., 'CTYPE': "", 'CUNIT': u.Unit("")}
-    wcsinfo = {}
     wcsaxes = input_model.meta.wcsinfo.wcsaxes
-    wcsinfo['WCSAXES'] = wcsaxes
+    wcsinfo = {'WCSAXES': wcsaxes}
     for key in ['CRPIX', 'CRVAL', 'CDELT', 'CTYPE', 'CUNIT']:
         val = []
         for ax in range(1, wcsaxes + 1):
@@ -200,7 +198,7 @@ def frame_from_model(wcsinfo):
         frames.append(spec)
     if other:
         # Make sure these are strings and not np.str_ objects.
-        axes_names = tuple([str(name) for name in wcsinfo['CTYPE'][other]])
+        axes_names = tuple(str(name) for name in wcsinfo['CTYPE'][other])
         name = "_".join(wcsinfo['CTYPE'][other])
         spatial = cf.Frame2D(name=name, axes_order=tuple(other), unit=cunit[other],
                              axes_names=axes_names)
@@ -208,26 +206,24 @@ def frame_from_model(wcsinfo):
     if wcsaxes == 2:
         return frames[0]
     elif wcsaxes == 3:
-        world = cf.CompositeFrame(frames, name='world')
-        return world
+        return cf.CompositeFrame(frames, name='world')
     else:
         raise ValueError("WCSAXES can be 2 or 3, got {0}".format(wcsaxes))
 
 
 def create_fitswcs(inp, input_frame=None):
-    if isinstance(inp, DataModel):
-        wcsinfo = wcsinfo_from_model(inp)
-        wavetable = None
-        spatial_axes, spectral_axes, unknown = gwutils.get_axes(wcsinfo)
-        if spectral_axes:
-            sp_axis = spectral_axes[0]
-            if wcsinfo['CTYPE'][sp_axis] == 'WAVE-TAB':
-                wavetable = inp.wavetable
-        transform = fitswcs_transform_from_model(wcsinfo, wavetable=wavetable)
-        output_frame = frame_from_model(wcsinfo)
-    else:
+    if not isinstance(inp, DataModel):
         raise TypeError("Input is expected to be a DataModel instance or a FITS file.")
 
+    wcsinfo = wcsinfo_from_model(inp)
+    wavetable = None
+    spatial_axes, spectral_axes, unknown = gwutils.get_axes(wcsinfo)
+    if spectral_axes:
+        sp_axis = spectral_axes[0]
+        if wcsinfo['CTYPE'][sp_axis] == 'WAVE-TAB':
+            wavetable = inp.wavetable
+    transform = fitswcs_transform_from_model(wcsinfo, wavetable=wavetable)
+    output_frame = frame_from_model(wcsinfo)
     if input_frame is None:
         wcsaxes = wcsinfo['WCSAXES']
         if wcsaxes == 2:
@@ -242,8 +238,7 @@ def create_fitswcs(inp, input_frame=None):
     pipeline = [(input_frame, transform),
                 (output_frame, None)]
 
-    wcsobj = wcs.WCS(pipeline)
-    return wcsobj
+    return wcs.WCS(pipeline)
 
 
 def dva_corr_model(va_scale, v2_ref, v3_ref):

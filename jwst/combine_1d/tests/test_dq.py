@@ -58,6 +58,4 @@ def create_spec_model(npoints=10, flux=1e-9, wave_range=(11, 13)):
         ), dtype=spec_dtype
     )
 
-    spec_model = datamodels.SpecModel(spec_table=otab)
-
-    return spec_model
+    return datamodels.SpecModel(spec_table=otab)

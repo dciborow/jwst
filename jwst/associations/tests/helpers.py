@@ -76,8 +76,9 @@ class BasePoolRule():
         for ppars in self.pools:
             pool = combine_pools(ppars.path, **ppars.kwargs)
             asns = generate(pool, rules)
-            assert len(asns) == ppars.n_asns, \
-                ppars.path + ': n_asns not expected {} {}'.format(len(asns), ppars.n_asns)
+            assert (
+                len(asns) == ppars.n_asns
+            ), f'{ppars.path}: n_asns not expected {len(asns)} {ppars.n_asns}'
             for asn, candidates in zip(asns, ppars.candidates):
                 assert set(asn.candidates) == set(candidates)
             file_regex = re.compile(r'.+_(?P<suffix>.+)\..+')
@@ -86,10 +87,12 @@ class BasePoolRule():
                     for member in product['members']:
                         if member['exptype'] == 'science':
                             match = file_regex.match(member['expname'])
-                            assert match is not None, \
-                                ppars.path + ': No suffix match for {}'.format(member['expname'])
-                            assert match.groupdict()['suffix'] in ppars.valid_suffixes, \
-                                ppars.path + ': Suffix {} not valid'.format(match.groupdict()['suffix'])
+                            assert (
+                                match is not None
+                            ), f"{ppars.path}: No suffix match for {member['expname']}"
+                            assert (
+                                match.groupdict()['suffix'] in ppars.valid_suffixes
+                            ), f"{ppars.path}: Suffix {match.groupdict()['suffix']} not valid"
 
 
 def make_megapool():
@@ -197,7 +200,7 @@ def parse_value(v, global_env=None, local_env=None):
         pass
     else:
         if m:
-            result = eval(m.group(1), global_env, local_env)
+            result = eval(m[1], global_env, local_env)
     return result
 
 

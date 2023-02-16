@@ -30,7 +30,7 @@ def create_afflist_rot(rotdegs):
         Affine2d objects having various rotations
     """
     alist = []
-    for nrot, rotd in enumerate(rotdegs):
+    for rotd in rotdegs:
         rotd_ = utils.avoidhexsingularity(rotd)
         alist.append(utils.Affine2d(rotradccw=np.pi * rotd_ / 180.0,
                                     name="affrot_{0:+.3f}".format(rotd_)))
@@ -114,8 +114,7 @@ def find_rotation(imagedata, psf_offset, rotdegs, mx, my, sx, sy, xo, yo,
 
     rot_measured_d, max_cor = utils.findpeak_1d(crosscorr_rots, rotdegs)
 
-    # return convenient affine2d
-    new_affine2d = utils.Affine2d(rotradccw=np.pi * rot_measured_d / 180.0,
-                                  name="{0:.4f}".format(rot_measured_d))
-
-    return new_affine2d
+    return utils.Affine2d(
+        rotradccw=np.pi * rot_measured_d / 180.0,
+        name="{0:.4f}".format(rot_measured_d),
+    )

@@ -99,14 +99,12 @@ def imaging(input_model, reference_files):
 
     tel2sky = pointing.v23tosky(input_model)
 
-    # Create the pipeline
-    pipeline = [(detector, distortion),
-                (v2v3, va_corr),
-                (v2v3vacorr, tel2sky),
-                (world, None)
-                ]
-
-    return pipeline
+    return [
+        (detector, distortion),
+        (v2v3, va_corr),
+        (v2v3vacorr, tel2sky),
+        (world, None),
+    ]
 
 
 def imaging_distortion(input_model, reference_files):
@@ -204,13 +202,12 @@ def lrs(input_model, reference_files):
         v3_ref=input_model.meta.wcsinfo.v3_ref
     ) & models.Identity(1)
 
-    # Put the transforms together into a single pipeline
-    pipeline = [(detector, dettotel),
-                (v2v3, va_corr),
-                (v2v3vacorr, teltosky),
-                (world, None)]
-
-    return pipeline
+    return [
+        (detector, dettotel),
+        (v2v3, va_corr),
+        (v2v3vacorr, teltosky),
+        (world, None),
+    ]
 
 
 def lrs_distortion(input_model, reference_files):
@@ -245,7 +242,7 @@ def lrs_distortion(input_model, reference_files):
     else:
         ref = fits.open(reference_files['specwcs'])
     with ref:
-        lrsdata = np.array([d for d in ref[1].data])
+        lrsdata = np.array(list(ref[1].data))
         # Get the zero point from the reference data.
         # The zero_point is X, Y  (which should be COLUMN, ROW)
         # These are 1-indexed in CDP-7 (i.e., SIAF convention) so must be converted to 0-indexed
@@ -357,7 +354,9 @@ def lrs_distortion(input_model, reference_files):
         if velosys is not None:
             velocity_corr = velocity_correction(input_model.meta.wcsinfo.velosys)
             wavemodel = wavemodel | velocity_corr
-            log.info("Applied Barycentric velocity correction : {}".format(velocity_corr[1].amplitude.value))
+            log.info(
+                f"Applied Barycentric velocity correction : {velocity_corr[1].amplitude.value}"
+            )
 
     # Construct the full distortion model (xsub,ysub -> v2,v3,wavelength)
     lrs_wav_model = xysubtoxyrot | models.Mapping([1], n_inputs=2) | wavemodel
@@ -424,12 +423,13 @@ def ifu(input_model, reference_files):
     # Put the transforms together into a single transform
     shape = input_model.data.shape
     det2abl.bounding_box = ((-0.5, shape[0] - 0.5), (-0.5, shape[1] - 0.5))
-    pipeline = [(detector, det2abl),
-                (miri_focal, abl2v2v3l),
-                (v2v3, va_corr),
-                (v2v3vacorr, tel2sky),
-                (world, None)]
-    return pipeline
+    return [
+        (detector, det2abl),
+        (miri_focal, abl2v2v3l),
+        (v2v3, va_corr),
+        (v2v3vacorr, tel2sky),
+        (world, None),
+    ]
 
 
 def detector_to_abl(input_model, reference_files):
@@ -472,7 +472,9 @@ def detector_to_abl(input_model, reference_files):
         if velosys is not None:
             velocity_corr = velocity_correction(input_model.meta.wcsinfo.velosys)
             lambda_model = [m | velocity_corr for m in lambda_model]
-            log.info("Applied Barycentric velocity correction : {}".format(velocity_corr[1].amplitude.value))
+            log.info(
+                f"Applied Barycentric velocity correction : {velocity_corr[1].amplitude.value}"
+            )
 
     with RegionsModel(reference_files['regions']) as f:
         allregions = f.regions.copy()
@@ -504,9 +506,12 @@ def detector_to_abl(input_model, reference_files):
                                                   models.Mapping((2,)))
     label_mapper.inverse = alpha_beta_mapper
 
-    det2alpha_beta = selector.RegionsSelector(('x', 'y'), ('alpha', 'beta', 'lam'),
-                                              label_mapper=label_mapper, selector=transforms)
-    return det2alpha_beta
+    return selector.RegionsSelector(
+        ('x', 'y'),
+        ('alpha', 'beta', 'lam'),
+        label_mapper=label_mapper,
+        selector=transforms,
+    )
 
 
 def abl_to_v2v3l(input_model, reference_files):
@@ -558,11 +563,12 @@ def abl_to_v2v3l(input_model, reference_files):
     wave_range_mapper = selector.LabelMapperRange(('alpha', 'beta', 'lam'), dict_mapper,
                                                   inputs_mapping=models.Mapping([2, ]))
     wave_range_mapper.inverse = wave_range_mapper.copy()
-    abl2v2v3l = selector.RegionsSelector(('alpha', 'beta', 'lam'), ('v2', 'v3', 'lam'),
-                                         label_mapper=wave_range_mapper,
-                                         selector=sel)
-
-    return abl2v2v3l
+    return selector.RegionsSelector(
+        ('alpha', 'beta', 'lam'),
+        ('v2', 'v3', 'lam'),
+        label_mapper=wave_range_mapper,
+        selector=sel,
+    )
 
 
 exp_type2transform = {'mir_image': imaging,
@@ -598,9 +604,8 @@ def get_wavelength_range(input_model, path=None):
     fname = input_model.meta.ref_file.wavelengthrange.name.split('/')[-1]
     if path is None and not os.path.exists(fname):
         raise IOError("Reference file {0} not found. Please specify a path.".format(fname))
-    else:
-        fname = os.path.join(path, fname)
-        f = WavelengthrangeModel(fname)
+    fname = os.path.join(path, fname)
+    f = WavelengthrangeModel(fname)
 
     wave_range = f.tree['wavelengthrange'].copy()
     wave_channels = f.tree['channels']

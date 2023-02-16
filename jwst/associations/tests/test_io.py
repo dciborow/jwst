@@ -18,9 +18,7 @@ POOL_PATH = 'pool_018_all_exptypes.csv'
 def pool():
     """Retrieve pool path"""
     pool_path = t_path(os.path.join('data', POOL_PATH))
-    pool = combine_pools(pool_path)
-
-    return pool
+    return combine_pools(pool_path)
 
 
 @pytest.fixture(
@@ -41,7 +39,7 @@ def make_asns(pool, request):
 
 def test_roundtrip(make_asns):
     generated, path, asn_format = make_asns
-    asn_files = glob(os.path.join(path, '*.' + asn_format))
+    asn_files = glob(os.path.join(path, f'*.{asn_format}'))
     assert len(asn_files) == len(generated.associations)
 
     for asn_file in asn_files:
@@ -60,7 +58,7 @@ def test_roundtrip(make_asns):
 
 def test_load_asn_all(make_asns):
     generated, path, asn_format = make_asns
-    asn_files = glob(os.path.join(path, '*.' + asn_format))
+    asn_files = glob(os.path.join(path, f'*.{asn_format}'))
     assert len(asn_files) == len(generated.associations)
 
     for asn_file in asn_files:

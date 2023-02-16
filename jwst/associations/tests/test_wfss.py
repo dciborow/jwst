@@ -1,11 +1,12 @@
 """Test for various WFSS modes"""
+
 from os import path
 
 from jwst.associations import AssociationPool
 from jwst.associations.main import Main
 from jwst.associations.tests.helpers import t_path
 
-REQUIRED_ASN_TYPES = set(['image2', 'spec2', 'image3', 'spec3'])
+REQUIRED_ASN_TYPES = {'image2', 'spec2', 'image3', 'spec3'}
 
 
 def test_niriss_wfss():
@@ -40,8 +41,8 @@ def test_niriss_wfss():
 
     # Ensure catalog and segmentation map names are correct in the spec2 associations
     l3name = asn_by_type['image3']['products'][0]['name']
-    source_cat = l3name + '_cat.ecsv'
-    segmap = l3name + '_segm.fits'
+    source_cat = f'{l3name}_cat.ecsv'
+    segmap = f'{l3name}_segm.fits'
     for product in asn_by_type['spec2']['products']:
         members_by_type = {
             member['exptype']: member

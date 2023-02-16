@@ -119,7 +119,7 @@ class PoolRow(UserDict):
         try:
             self.meta = init.meta
         except AttributeError:
-            self.meta = dict()
+            self.meta = {}
 
 
 def _convert_to_str():

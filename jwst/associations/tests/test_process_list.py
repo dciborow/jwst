@@ -14,7 +14,7 @@ def test_item():
     item2 = ProcessItem(pool[1])
     assert item1 == item1
     assert item1 != item2
-    s = set([item1, item2])
+    s = {item1, item2}
     assert len(s) == 2
 
 
@@ -35,12 +35,10 @@ def test_process_queue():
     ]
     standard = [1, 2, 3, 4, 5]
 
-    idx = 0
     queue.extend(items_to_add[0])
     results = []
-    for item in queue:
+    for idx, item in enumerate(queue, start=1):
         results.append(item)
-        idx += 1
         try:
             to_add = items_to_add[idx]
         except:

@@ -45,9 +45,7 @@ def create_pipeline(input_model, reference_files):
 
     log.debug(f'reference files used in NIRCAM WCS pipeline: {reference_files}')
     exp_type = input_model.meta.exposure.type.lower()
-    pipeline = exp_type2transform[exp_type](input_model, reference_files)
-
-    return pipeline
+    return exp_type2transform[exp_type](input_model, reference_files)
 
 
 def imaging(input_model, reference_files):
@@ -94,11 +92,12 @@ def imaging(input_model, reference_files):
     )
 
     tel2sky = pointing.v23tosky(input_model)
-    pipeline = [(detector, distortion),
-                (v2v3, va_corr),
-                (v2v3vacorr, tel2sky),
-                (world, None)]
-    return pipeline
+    return [
+        (detector, distortion),
+        (v2v3, va_corr),
+        (v2v3vacorr, tel2sky),
+        (world, None),
+    ]
 
 
 def imaging_distortion(input_model, reference_files):
@@ -181,7 +180,7 @@ def tsgrism(input_model, reference_files):
     """
 
     # make sure this is a grism image
-    if "NRC_TSGRISM" != input_model.meta.exposure.type:
+    if input_model.meta.exposure.type != "NRC_TSGRISM":
         raise ValueError('The input exposure is not a NIRCAM time series grism')
 
     if input_model.meta.instrument.module != "A":
@@ -221,7 +220,9 @@ def tsgrism(input_model, reference_files):
         pass
     if velosys is not None:
         velocity_corr = velocity_correction(input_model.meta.wcsinfo.velosys)
-        log.info("Added Barycentric velocity correction: {}".format(velocity_corr[1].amplitude.value))
+        log.info(
+            f"Added Barycentric velocity correction: {velocity_corr[1].amplitude.value}"
+        )
         det2det = det2det | Mapping((0, 1, 2, 3)) | Identity(2) & velocity_corr & Identity(1)
 
     # input into the forward transform is x,y,x0,y0,order
@@ -284,13 +285,13 @@ def tsgrism(input_model, reference_files):
     newinverse = Mapping((0, 1, 0, 1)) | setra & setdec & Identity(2) | t2skyinverse
     tel2sky.inverse = newinverse
 
-    pipeline = [(frames['grism_detector'], sub2direct),
-                (frames['direct_image'], distortion),
-                (frames['v2v3'], va_corr),
-                (frames['v2v3vacorr'], tel2sky),
-                (frames['world'], None)]
-
-    return pipeline
+    return [
+        (frames['grism_detector'], sub2direct),
+        (frames['direct_image'], distortion),
+        (frames['v2v3'], va_corr),
+        (frames['v2v3vacorr'], tel2sky),
+        (frames['world'], None),
+    ]
 
 
 def wfss(input_model, reference_files):
@@ -392,7 +393,9 @@ def wfss(input_model, reference_files):
         pass
     if velosys is not None:
         velocity_corr = velocity_correction(input_model.meta.wcsinfo.velosys)
-        log.info("Added Barycentric velocity correction: {}".format(velocity_corr[1].amplitude.value))
+        log.info(
+            f"Added Barycentric velocity correction: {velocity_corr[1].amplitude.value}"
+        )
         det2det = det2det | Mapping((0, 1, 2, 3)) | Identity(2) & velocity_corr & Identity(1)
 
     # create the pipeline to construct a WCS object for the whole image
@@ -417,7 +420,7 @@ def wfss(input_model, reference_files):
     for cframe, trans in image_pipeline:
         trans = trans & (Identity(2))
         name = cframe.name
-        cframe.name = name + 'spatial'
+        cframe.name = f'{name}spatial'
         spatial_and_spectral = cf.CompositeFrame([cframe, spec],
                                                  name=name)
         imagepipe.append((spatial_and_spectral, trans))
@@ -439,13 +442,17 @@ def create_coord_frames():
     sky_frame = cf.CelestialFrame(reference_frame=coord.ICRS(), name='icrs')
     spec = cf.SpectralFrame(name='spectral', axes_order=(2,), unit=(u.micron,),
                             axes_names=('wavelength',))
-    frames = {'grism_detector': gdetector,
-              'direct_image': cf.CompositeFrame([detector, spec], name='direct_image'),
-              'v2v3': cf.CompositeFrame([v2v3_spatial, spec], name='v2v3'),
-              'v2v3vacorr': cf.CompositeFrame([v2v3vacorr_spatial, spec], name='v2v3vacorr'),
-              'world': cf.CompositeFrame([sky_frame, spec], name='world')
-              }
-    return frames
+    return {
+        'grism_detector': gdetector,
+        'direct_image': cf.CompositeFrame(
+            [detector, spec], name='direct_image'
+        ),
+        'v2v3': cf.CompositeFrame([v2v3_spatial, spec], name='v2v3'),
+        'v2v3vacorr': cf.CompositeFrame(
+            [v2v3vacorr_spatial, spec], name='v2v3vacorr'
+        ),
+        'world': cf.CompositeFrame([sky_frame, spec], name='world'),
+    }
 
 
 exp_type2transform = {'nrc_image': imaging,

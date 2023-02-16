@@ -11,8 +11,7 @@ except DistributionNotFound:
     __version__ = 'dev'
 
 if '+' in __version__:
-    commit = _regex_git_hash.match(__version__).groups()
-    if commit:
+    if commit := _regex_git_hash.match(__version__).groups():
         __version_commit__ = commit[0]
 
 if sys.version_info < (3, 8):

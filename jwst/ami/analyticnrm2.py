@@ -33,9 +33,7 @@ def jinc(x, y):
         np.sqrt((x - jinc.offx) * (x - jinc.offx) +
                 (y - jinc.offy) * (y - jinc.offy))
 
-    jinc_2d = leastsqnrm.replacenan(scipy.special.jv(1, np.pi * R) / (2.0 * R))
-
-    return jinc_2d
+    return leastsqnrm.replacenan(scipy.special.jv(1, np.pi * R) / (2.0 * R))
 
 
 def ffc(kx, ky, **kwargs):
@@ -77,9 +75,13 @@ def ffc(kx, ky, **kwargs):
     affine2d = kwargs['affine2d']
     kxprime, kyprime = affine2d.distortFargs(kx - ko[0], ky - ko[1])
 
-    cos_array = 2 * np.cos(2 * np.pi * pitch * (kxprime * baseline[0] + kyprime * baseline[1]) / lam)
-
-    return cos_array
+    return 2 * np.cos(
+        2
+        * np.pi
+        * pitch
+        * (kxprime * baseline[0] + kyprime * baseline[1])
+        / lam
+    )
 
 
 def ffs(kx, ky, **kwargs):
@@ -120,9 +122,13 @@ def ffs(kx, ky, **kwargs):
     affine2d = kwargs['affine2d']
     kxprime, kyprime = affine2d.distortFargs(kx - ko[0], ky - ko[1])
 
-    sin_array = 2 * np.sin(2 * np.pi * pitch * (kxprime * baseline[0] + kyprime * baseline[1]) / lam)
-
-    return sin_array
+    return 2 * np.sin(
+        2
+        * np.pi
+        * pitch
+        * (kxprime * baseline[0] + kyprime * baseline[1])
+        / lam
+    )
 
 
 def harmonicfringes(**kwargs):
@@ -241,10 +247,10 @@ def image_center(fov, oversample, psf_offset):
         offset of the psf center from the array center.
     """
 
-    offsets_from_center = np.array(utils.centerpoint((oversample * fov, oversample * fov))) + \
-        np.array((psf_offset[1], psf_offset[0])) * oversample
-
-    return offsets_from_center
+    return (
+        np.array(utils.centerpoint((oversample * fov, oversample * fov)))
+        + np.array((psf_offset[1], psf_offset[0])) * oversample
+    )
 
 
 def interf(kx, ky, **kwargs):
@@ -368,8 +374,7 @@ def model_array(ctrs, lam, oversample, pitch, fov, d, psf_offset=(0, 0),
                 alist = np.append(alist, j + i + 1)
     alist = alist.reshape((len(alist) // 2, 2))
 
-    ffmodel = []
-    ffmodel.append(nholes * np.ones(modelshape))
+    ffmodel = [nholes * np.ones(modelshape)]
     for basepair in alist:
         baseline = ctrs[int(basepair[0])] - ctrs[int(basepair[1])]
         cosfringe, sinfringe = harmonicfringes(fov=fov, pitch=pitch, psf_offset=psf_offset,
@@ -598,7 +603,7 @@ def psf(detpixel, fov, oversample, ctrs, d, lam, phi, psf_offset, affine2d,
         asf_fringe = asffringe(detpixel, fov, oversample, ctrs, lam, phi, psf_offset, affine2d)
     else:
         raise ValueError(
-            "pupil shape %s not supported - choices: 'circonly', 'circ', 'hexonly', 'hex', 'fringeonly'"
-            % shape)
+            f"pupil shape {shape} not supported - choices: 'circonly', 'circ', 'hexonly', 'hex', 'fringeonly'"
+        )
 
     return (asf_2d * asf_2d.conj()).real

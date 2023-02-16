@@ -36,11 +36,7 @@ def lv2_v1_to_v2(asn_v1):
         product = {
             'name': product_name(member['expname'])
         }
-        new_members = []
-        new_members.append({
-            'expname': member['expname'],
-            'exptype': member['exptype']
-        })
+        new_members = [{'expname': member['expname'], 'exptype': member['exptype']}]
         for bkg in member.get('bkgexps', []):
             new_members.append({
                 'expname': bkg['expname'],
@@ -72,8 +68,7 @@ def product_name(expname):
     name = path.splitext(
         path.basename(expname.lower())
     )[0]
-    name_nosuffix = remove_suffix(name)
-    return name_nosuffix
+    return remove_suffix(name)
 
 
 # ################
@@ -104,11 +99,11 @@ if __name__ == '__main__':
     logger.setLevel(numeric_log_level)
 
     for fname in args.old_asns:
-        logger.info('Working {}'.format(fname))
+        logger.info(f'Working {fname}')
         with open(fname) as fp:
             asn_v1 = json.load(fp)
         asn_v2 = lv2_v1_to_v2(asn_v1)
         asn_v2_fname = args.prefix + fname
-        logger.info('\tWriting to {}'.format(asn_v2_fname))
+        logger.info(f'\tWriting to {asn_v2_fname}')
         with open(asn_v2_fname, 'w') as fp:
             json.dump(asn_v2, fp, indent=4, separators=(',', ': '))

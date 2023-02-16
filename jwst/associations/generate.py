@@ -66,7 +66,7 @@ def generate(pool, rules, version_id=None, finalize=True):
         total_new = 0
         total_reprocess = 0
         with Bar('Processing items', log_level=logger.getEffectiveLevel(),
-                 max=len(process_list.items)) as bar:
+                         max=len(process_list.items)) as bar:
             for item in process_list.items:
                 item = PoolRow(item)
 
@@ -86,8 +86,9 @@ def generate(pool, rules, version_id=None, finalize=True):
                 # also EXISTING. Prevent infinite loops.
                 to_process_modified = []
                 for next_list in to_process:
-                    next_list = workover_filter(next_list, process_list.work_over)
-                    if next_list:
+                    if next_list := workover_filter(
+                        next_list, process_list.work_over
+                    ):
                         to_process_modified.append(next_list)
                 process_queue.extend(to_process_modified)
                 total_reprocess += len(to_process_modified)
@@ -186,7 +187,7 @@ def generate_from_item(
             ListCategory.BOTH,
             ListCategory.RULES,
     ) and rules is not None:
-        ignore_asns = set([type(asn) for asn in existing_asns])
+        ignore_asns = {type(asn) for asn in existing_asns}
         new_asns, reprocess = rules.match(
             item,
             version_id=version_id,

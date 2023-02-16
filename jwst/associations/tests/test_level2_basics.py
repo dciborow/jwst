@@ -26,8 +26,7 @@ def generate_from_pool(pool_path):
     """Generate associations from pools"""
     rules = registry_level2_only()
     pool = combine_pools(t_path(pool_path))
-    asns = generate(pool, rules)
-    return asns
+    return generate(pool, rules)
 
 
 def cmd_from_pool(pool_path, args):
@@ -49,8 +48,7 @@ def cmd_from_pool(pool_path, args):
         '--ignore-default'
     ]
     full_args.extend(args)
-    result = Main(full_args, pool=pool_path)
-    return result
+    return Main(full_args, pool=pool_path)
 
 
 def test_level2_productname():

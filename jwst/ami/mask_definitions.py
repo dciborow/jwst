@@ -50,7 +50,7 @@ class NRM_mask_definitions():
             holeshape = 'circ'
 
         if holeshape not in ["circ", "hex", ]:
-            raise ValueError("Unsupported mask holeshape" + maskname)
+            raise ValueError(f"Unsupported mask holeshape{maskname}")
         self.maskname = maskname
 
         if self.maskname == "jwst_g7s6c":
@@ -61,9 +61,6 @@ class NRM_mask_definitions():
             self.OD = 6.610645669291339 * m  # Full pupil file size, incl padding, webbpsf kwd PUPLDIAM
             if rotdeg is not None:
                 self.rotdeg = rotdeg
-
-        elif self.maskname == "jwst_g7s6":
-            pass  # not finished
 
     def showmask(self):
         """
@@ -80,14 +77,11 @@ class NRM_mask_definitions():
         Diameter of the smallest centered circle
 
         """
-        radii = []
-        for ctr in self.ctrs:
-            radii.append(math.sqrt(ctr[0] * ctr[0] + ctr[1] * ctr[1]))
-
+        radii = [math.sqrt(ctr[0] * ctr[0] + ctr[1] * ctr[1]) for ctr in self.ctrs]
         return 2.0 * (max(radii) + 0.5 * self.hdia)
 
 
-def jwst_g7s6_centers_asbuilt(chooseholes=None):  # was jwst_g7s6_centers_asdesigned
+def jwst_g7s6_centers_asbuilt(chooseholes=None):    # was jwst_g7s6_centers_asdesigned
     """
     Short Summary
     -------------
@@ -103,20 +97,10 @@ def jwst_g7s6_centers_asbuilt(chooseholes=None):  # was jwst_g7s6_centers_asdesi
     Actual hole centers
     """
 
-    holedict = {}  # as_built names, C2 open, C5 closed, but as designed coordinates
     # Assemble holes by actual open segment names (as_built).  Either the full mask or the
     # subset-of-holes mask will be V2-reversed after the as_designed centers  are defined
     # Debug orientations with b4,c6,[c2]
     allholes = ('b4', 'c2', 'b5', 'b2', 'c1', 'b6', 'c6')
-
-    #                                             design  built
-    holedict['b4'] = [0.00000000, -2.640000]       # B4 -> B4
-    holedict['c2'] = [-2.2863100, 0.0000000]       # C5 -> C2
-    holedict['b5'] = [2.2863100, -1.3200001]       # B3 -> B5
-    holedict['b2'] = [-2.2863100, 1.3200001]       # B6 -> B2
-    holedict['c1'] = [-1.1431500, 1.9800000]       # C6 -> C1
-    holedict['b6'] = [2.2863100, 1.3200001]        # B2 -> B6
-    holedict['c6'] = [1.1431500, 1.9800000]        # C1 -> C6
 
     # as designed MB coordinates (Mathilde Beaulieu, Peter, Anand).
     # as designed: segments C5 open, C2 closed, meters V2V3 per Paul Lightsey def
@@ -125,10 +109,16 @@ def jwst_g7s6_centers_asbuilt(chooseholes=None):  # was jwst_g7s6_centers_asdesi
     # undistorted pupil coords on PM.  These numbers are considered immutable.
     # as designed seg -> as built seg in comments each ctr entry (no distortion)
     if chooseholes:  # holes B4 B5 C6 asbuilt for orientation testing
-        holelist = []
-        for h in allholes:
-            if h in chooseholes:
-                holelist.append(holedict[h])
+        holedict = {
+            'b4': [0.00000000, -2.640000],
+            'c2': [-2.2863100, 0.0000000],
+            'b5': [2.2863100, -1.3200001],
+            'b2': [-2.2863100, 1.3200001],
+            'c1': [-1.1431500, 1.9800000],
+            'b6': [2.2863100, 1.3200001],
+            'c6': [1.1431500, 1.9800000],
+        }
+        holelist = [holedict[h] for h in allholes if h in chooseholes]
         ctrs_asdesigned = np.array(holelist)
     else:
         # the REAL THING - as_designed 7 hole, m in PM space, no distortion

@@ -79,11 +79,7 @@ class NrmModel:
         affine2d: Affine2d object
             Affine2d object
         """
-        if "debug" in kwargs:
-            self.debug = kwargs["debug"]
-        else:
-            self.debug = False
-
+        self.debug = kwargs.get("debug", False)
         self.holeshape = holeshape
         self.pixel = pixscale  # det pix in rad (square)
         self.over = over
@@ -92,26 +88,22 @@ class NrmModel:
         mask = "jwst"
         self.maskname = mask
 
-        holedict = {}
         # Assemble holes by actual open segment names. Either the full mask or
         # the subset-of-holes mask will be V2-reversed after the as_designed
         # centers are installed in the object.
         allholes = ('b4', 'c2', 'b5', 'b2', 'c1', 'b6', 'c6')
-        holedict['b4'] = [0.00000000, -2.640000]       # B4 -> B4
-        holedict['c2'] = [-2.2863100, 0.0000000]       # C5 -> C2
-        holedict['b5'] = [2.2863100, -1.3200001]       # B3 -> B5
-        holedict['b2'] = [-2.2863100, 1.3200001]       # B6 -> B2
-        holedict['c1'] = [-1.1431500, 1.9800000]       # C6 -> C1
-        holedict['b6'] = [2.2863100, 1.3200001]       # B2 -> B6
-        holedict['c6'] = [1.1431500, 1.9800000]       # C1 -> C6
-
         if mask.lower() == 'jwst':
             if chooseholes is not False:
-                # holes B4 B5 C6 asbuilt for orientation testing
-                holelist = []
-                for h in allholes:
-                    if h in chooseholes:
-                        holelist.append(holedict[h])
+                holedict = {
+                    'b4': [0.00000000, -2.640000],
+                    'c2': [-2.2863100, 0.0000000],
+                    'b5': [2.2863100, -1.3200001],
+                    'b2': [-2.2863100, 1.3200001],
+                    'c1': [-1.1431500, 1.9800000],
+                    'b6': [2.2863100, 1.3200001],
+                    'c6': [1.1431500, 1.9800000],
+                }
+                holelist = [holedict[h] for h in allholes if h in chooseholes]
                 self.ctrs_asdesigned = np.array(holelist)
             else:
                 # the REAL THING - as_designed 7 hole, m in PM space,
@@ -130,7 +122,7 @@ class NrmModel:
             self.D = 6.5 * m
         else:
             self.ctrs, self.d, self.D = np.array(mask.ctrs), mask.hdia, \
-                mask.activeD
+                    mask.activeD
 
         if mask.lower() == 'jwst':
             """
@@ -163,14 +155,7 @@ class NrmModel:
         self.refdir = refdir
         self.fmt = "%10.4e"
 
-        if phi:  # meters of OPD at central wavelength
-            if phi == "perfect":
-                self.phi = np.zeros(self.N)  # backwards compatibility
-            else:
-                self.phi = phi
-        else:
-            self.phi = np.zeros(self.N)
-
+        self.phi = np.zeros(self.N) if phi and phi == "perfect" or not phi else phi
         self.chooseholes = chooseholes
 
         # affine2d property not to be changed in NrmModel - create a new
@@ -226,10 +211,9 @@ class NrmModel:
                                  'Sim pixel scale in radians')
 
         self.psf_over = np.zeros((over * fov, over * fov))
-        nspec = 0
         # accumulate polychromatic oversampled psf in the object
 
-        for w, l in bandpass:  # w: wavelength's weight, l: lambda (wavelength)
+        for nspec, (w, l) in enumerate(bandpass):  # w: wavelength's weight, l: lambda (wavelength)
             self.psf_over += w * analyticnrm2.psf(self.pixel,  # det pixel, rad
                                                   fov,   # in detpix number
                                                   over,
@@ -242,8 +226,6 @@ class NrmModel:
             # offset signs fixed to agree w/DS9, +x shifts ctr R, +y shifts up
             self.simhdr["WAVL{0}".format(nspec)] = (l, "wavelength (m)")
             self.simhdr["WGHT{0}".format(nspec)] = (w, "weight")
-            nspec += 1
-
         # store the detector pixel scale psf in the object
         self.psf = utils.rebin(self.psf_over, (over, over))
 
@@ -288,15 +270,13 @@ class NrmModel:
 
         self.over = over
 
-        if hasattr(self, 'pixscale_measured'):
-            if self.pixscale_measured is not None:
-                self.modelpix = self.pixscale_measured
+        if (
+            hasattr(self, 'pixscale_measured')
+            and self.pixscale_measured is not None
+        ):
+            self.modelpix = self.pixscale_measured
 
-        if pixscale is None:
-            self.modelpix = self.pixel
-        else:
-            self.modelpix = pixscale
-
+        self.modelpix = self.pixel if pixscale is None else pixscale
         self.modelctrs = self.ctrs
 
         # The model shape is (fov) x (fov) x (# solution coefficients)
@@ -501,9 +481,6 @@ class NrmModel:
         #  from data at an earlier iteration
         if not hasattr(self, 'refphi'):
             self.refphi = np.zeros(len(self.ctrs))
-        else:
-            pass
-
         self.pixscales = np.zeros(len(self.scallist))
         for q, scal in enumerate(self.scallist):
             self.test_pixscale = self.pixel * scal
@@ -610,9 +587,7 @@ def goodness_of_fit(data, bestfit, diskR=8):
 
     masked_data = np.ma.masked_invalid(mask * data)
 
-    gof = abs(difference).sum() / abs(masked_data).sum()
-
-    return gof
+    return abs(difference).sum() / abs(masked_data).sum()
 
 
 def run_data_correlate(data, model):
@@ -638,6 +613,4 @@ def run_data_correlate(data, model):
     sci = data
     log.debug('shape sci: %s', np.shape(sci))
 
-    cor = utils.rcrosscorrelate(sci, model)
-
-    return cor
+    return utils.rcrosscorrelate(sci, model)
