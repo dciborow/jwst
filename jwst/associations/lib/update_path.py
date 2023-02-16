@@ -74,8 +74,7 @@ def _replace_path(old_path, new_path):
         The basename of the path with the
     """
     file_name = basename(old_path)
-    new_full_path = join(new_path, file_name)
-    return new_full_path
+    return join(new_path, file_name)
 
 
 # #####
@@ -138,14 +137,13 @@ def test_replace_path():
 
 
 def _gen_dict_extract(key, var):
-    if hasattr(var, 'items'):
-        for k, v in var.items():
-            if k == key:
-                yield v
-            if isinstance(v, dict):
-                for result in _gen_dict_extract(key, v):
-                    yield result
-            elif isinstance(v, list):
-                for d in v:
-                    for result in _gen_dict_extract(key, d):
-                        yield result
+    if not hasattr(var, 'items'):
+        return
+    for k, v in var.items():
+        if k == key:
+            yield v
+        if isinstance(v, dict):
+            yield from _gen_dict_extract(key, v)
+        elif isinstance(v, list):
+            for d in v:
+                yield from _gen_dict_extract(key, d)

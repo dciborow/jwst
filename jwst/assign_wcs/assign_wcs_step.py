@@ -17,7 +17,7 @@ log.setLevel(logging.DEBUG)
 __all__ = ["AssignWcsStep"]
 
 
-WFSS_TYPES = set(['nrc_wfss', 'nis_wfss'])
+WFSS_TYPES = {'nrc_wfss', 'nis_wfss'}
 
 
 class AssignWcsStep(Step):
@@ -71,9 +71,16 @@ class AssignWcsStep(Step):
         reference_file_names = {}
         with datamodels.open(input) as input_model:
             # If input type is not supported, log warning, set to 'skipped', exit
-            if not (isinstance(input_model, datamodels.ImageModel) or
-                    isinstance(input_model, datamodels.CubeModel) or
-                    isinstance(input_model, datamodels.IFUImageModel)):
+            if not (
+                isinstance(
+                    input_model,
+                    (
+                        datamodels.ImageModel,
+                        datamodels.CubeModel,
+                        datamodels.IFUImageModel,
+                    ),
+                )
+            ):
                 log.warning("Input dataset type is not supported.")
                 log.warning("assign_wcs expects ImageModel, IFUImageModel or CubeModel as input.")
                 log.warning("Skipping assign_wcs step.")
@@ -83,7 +90,7 @@ class AssignWcsStep(Step):
 
             for reftype in self.reference_file_types:
                 reffile = self.get_reference_file(input_model, reftype)
-                reference_file_names[reftype] = reffile if reffile else ""
+                reference_file_names[reftype] = reffile or ""
             log.debug(f'reference files used in assign_wcs: {reference_file_names}')
 
             # Get the MSA metadata file if needed and add to reffiles

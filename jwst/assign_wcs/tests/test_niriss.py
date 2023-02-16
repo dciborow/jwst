@@ -43,7 +43,7 @@ def create_hdul(detector='NIS', filtername='CLEAR',
     hdul = fits.HDUList()
     phdu = fits.PrimaryHDU()
     phdu.header['telescop'] = "JWST"
-    phdu.header['filename'] = "test+" + filtername
+    phdu.header['filename'] = f"test+{filtername}"
     phdu.header['instrume'] = 'NIRISS'
     phdu.header['detector'] = detector
     phdu.header['FILTER'] = filtername
@@ -64,8 +64,7 @@ def create_wcsobj(hdul):
     im = ImageModel(hdul)
     ref = get_reference_files(im)
     pipeline = niriss.create_pipeline(im, ref)
-    wcsobj = wcs.WCS(pipeline)
-    return wcsobj
+    return wcs.WCS(pipeline)
 
 
 def create_wfss_wcs(filtername, pupil='F200W'):
@@ -73,8 +72,7 @@ def create_wfss_wcs(filtername, pupil='F200W'):
     im = ImageModel(hdul)
     ref = get_reference_files(im)
     pipeline = niriss.create_pipeline(im, ref)
-    wcsobj = wcs.WCS(pipeline)
-    return wcsobj
+    return wcs.WCS(pipeline)
 
 
 def create_imaging_wcs(filtername):
@@ -82,8 +80,7 @@ def create_imaging_wcs(filtername):
     im = ImageModel(hdul)
     ref = get_reference_files(im)
     pipeline = niriss.create_pipeline(im, ref)
-    wcsobj = wcs.WCS(pipeline)
-    return wcsobj
+    return wcs.WCS(pipeline)
 
 
 def get_reference_files(datamodel):
@@ -92,10 +89,7 @@ def get_reference_files(datamodel):
     for reftype in AssignWcsStep.reference_file_types:
         val = step.get_reference_file(datamodel, reftype)
         print(reftype, val)
-        if val.strip() == 'N/A':
-            refs[reftype] = None
-        else:
-            refs[reftype] = val
+        refs[reftype] = None if val.strip() == 'N/A' else val
     print(refs)
     return refs
 
@@ -104,7 +98,7 @@ def test_niriss_wfss_available_frames():
     for f in ['GR150R', 'GR150C']:
         wcsobj = create_wfss_wcs(f)
         available_frames = wcsobj.available_frames
-        assert all([a == b for a, b in zip(niriss_wfss_frames, available_frames)])
+        assert all(a == b for a, b in zip(niriss_wfss_frames, available_frames))
 
 
 def traverse_wfss_trace(filtername):
@@ -153,7 +147,7 @@ def test_imaging_frames():
     """Verify the available imaging mode reference frames."""
     wcsobj = create_imaging_wcs('F200W')
     available_frames = wcsobj.available_frames
-    assert all([a == b for a, b in zip(niriss_imaging_frames, available_frames)])
+    assert all(a == b for a, b in zip(niriss_imaging_frames, available_frames))
 
 
 def test_imaging_distortion():

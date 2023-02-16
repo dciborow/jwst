@@ -65,14 +65,8 @@ def test_duplicate_main():
     generated = Main.cli(cmd_args)
     asns = generated.associations
     assert len(asns) == 2
-    asn_types = set([
-        asn['asn_type']
-        for asn in asns
-    ])
+    asn_types = {asn['asn_type'] for asn in asns}
     assert len(asn_types) == 1
     assert 'image3' in asn_types
-    asn_ids = set([
-        asn['asn_id']
-        for asn in asns
-    ])
-    assert asn_ids == set(('a3001', 'o029'))
+    asn_ids = {asn['asn_id'] for asn in asns}
+    assert asn_ids == {'a3001', 'o029'}

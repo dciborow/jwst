@@ -416,59 +416,61 @@ class Asn_Lv2MIRLRSFixedSlitNod(
     def __init__(self, *args, **kwargs):
 
         # Setup constraints
-        self.constraints = Constraint([
-            Constraint_Base(),
-            Constraint_Mode(),
-            DMSAttrConstraint(
-                name='exp_type',
-                sources=['exp_type'],
-                value='mir_lrs-fixedslit'
-            ),
-            DMSAttrConstraint(
-                name='patttype',
-                sources=['patttype'],
-                value='along-slit-nod',
-            ),
-            SimpleConstraint(
-                value=True,
-                test=lambda value, item: self.acid.type != 'background',
-                force_unique=False
-            ),
-            Constraint(
-                [
-                    Constraint(
-                        [
-                            DMSAttrConstraint(
-                                name='patt_num',
-                                sources=['patt_num'],
-                            ),
-                            Constraint_Single_Science(
-                                self.has_science,
-                                reprocess_on_match=True,
-                                work_over=ListCategory.EXISTING
-                            )
-                        ]
-                    ),
-                    Constraint(
-                        [
-                            DMSAttrConstraint(
-                                name='is_current_patt_num',
-                                sources=['patt_num'],
-                                value=lambda: '((?!{}).)*'.format(self.constraints['patt_num'].value),
-                            ),
-                            SimpleConstraint(
-                                name='force_match',
-                                value=None,
-                                sources=lambda item: False,
-                                test=lambda constraint, obj: True,
-                                force_unique=True,
-                            )
-                        ]
-                    )
-                ],
-                reduce=Constraint.any
-            )
-        ])
+        self.constraints = Constraint(
+            [
+                Constraint_Base(),
+                Constraint_Mode(),
+                DMSAttrConstraint(
+                    name='exp_type',
+                    sources=['exp_type'],
+                    value='mir_lrs-fixedslit',
+                ),
+                DMSAttrConstraint(
+                    name='patttype',
+                    sources=['patttype'],
+                    value='along-slit-nod',
+                ),
+                SimpleConstraint(
+                    value=True,
+                    test=lambda value, item: self.acid.type != 'background',
+                    force_unique=False,
+                ),
+                Constraint(
+                    [
+                        Constraint(
+                            [
+                                DMSAttrConstraint(
+                                    name='patt_num',
+                                    sources=['patt_num'],
+                                ),
+                                Constraint_Single_Science(
+                                    self.has_science,
+                                    reprocess_on_match=True,
+                                    work_over=ListCategory.EXISTING,
+                                ),
+                            ]
+                        ),
+                        Constraint(
+                            [
+                                DMSAttrConstraint(
+                                    name='is_current_patt_num',
+                                    sources=['patt_num'],
+                                    value=lambda: f"((?!{self.constraints['patt_num'].value}).)*",
+                                ),
+                                SimpleConstraint(
+                                    name='force_match',
+                                    value=None,
+                                    sources=lambda item: False,
+                                    test=lambda constraint, obj: True,
+                                    force_unique=True,
+                                ),
+                            ]
+                        ),
+                    ],
+                    reduce=Constraint.any,
+                ),
+            ]
+        )
 
         # Now check and continue initialization.
         super(Asn_Lv2MIRLRSFixedSlitNod, self).__init__(*args, **kwargs)

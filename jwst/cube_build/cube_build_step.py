@@ -127,10 +127,7 @@ class CubeBuildStep (Step):
         # 1. MSM: modified Shepard method
         # 2. EMSM
 
-        if self.coord_system == 'skyalign':
-            self.interpolation = 'pointcloud'
-
-        if self.coord_system == 'ifualign':
+        if self.coord_system in ['skyalign', 'ifualign']:
             self.interpolation = 'pointcloud'
 
         if self.weighting == 'drizzle':
@@ -146,20 +143,14 @@ class CubeBuildStep (Step):
 # ________________________________________________________________________________
 # read input parameters - Channel, Band (Subchannel), Grating, Filter
 # ________________________________________________________________________________
-        self.pars_input = {}
-# the following parameters are set either by the an input parameter
-# or
-# if not set on the command line then from reading in the data.
-        self.pars_input['channel'] = []
-        self.pars_input['subchannel'] = []
-
-        self.pars_input['filter'] = []
-        self.pars_input['grating'] = []
-
-        # including values in pars_input that could get updated in cube_build_step.py
-        self.pars_input['output_type'] = self.output_type
-        self.pars_input['coord_system'] = self.coord_system
-
+        self.pars_input = {
+            'channel': [],
+            'subchannel': [],
+            'filter': [],
+            'grating': [],
+            'output_type': self.output_type,
+            'coord_system': self.coord_system,
+        }
         if self.single:
             self.pars_input['output_type'] = 'single'
             self.log.info('Cube Type: Single cubes')
@@ -172,10 +163,7 @@ class CubeBuildStep (Step):
             if self.weighting == 'drizzle':
                 self.interpolation = 'drizzle'
 
-            if self.weighting == 'msm':
-                self.interpolation = 'pointcloud'
-
-            if self.weighting == 'emsm':
+            elif self.weighting in ['msm', 'emsm']:
                 self.interpolation = 'pointcloud'
 
 # read_user_input:
@@ -362,22 +350,6 @@ class CubeBuildStep (Step):
     def read_user_input(self):
         """Read user input options for channel, subchannel, filter, or grating"""
 
-        # Determine if any of the input parameters channel, band, filter or
-        # grating have been set.
-
-        # This routine updates the dictionary self.pars_input with any user
-        # provided inputs. In particular it sets pars_input['channel'],
-        # pars_input['sub_channel'], pars_input['grating'], and
-        # pars_input['filter'] with user provided values.
-
-        valid_channel = ['1', '2', '3', '4', 'all']
-        valid_subchannel = ['short', 'medium', 'long', 'all', 'short-medium', 'short-long',
-                            'medium-short', 'medium-long', 'long-short', 'long-medium']
-
-        valid_fwa = ['f070lp', 'f100lp',
-                     'g170lp', 'f290lp', 'clear', 'opaque', 'all']
-        valid_gwa = ['g140m', 'g140h', 'g235m', 'g235h',
-                     'g395m', 'g395h', 'prism', 'all']
 # ________________________________________________________________________________
 # For MIRI we can set the channel.
 # If channel is  set to 'all' then let the determine_band_coverage figure out
@@ -390,6 +362,15 @@ class CubeBuildStep (Step):
                 self.pars_input['output_type'] = 'user'
             channellist = self.channel.split(',')
             user_clen = len(channellist)
+            # Determine if any of the input parameters channel, band, filter or
+            # grating have been set.
+
+            # This routine updates the dictionary self.pars_input with any user
+            # provided inputs. In particular it sets pars_input['channel'],
+            # pars_input['sub_channel'], pars_input['grating'], and
+            # pars_input['filter'] with user provided values.
+
+            valid_channel = ['1', '2', '3', '4', 'all']
             for j in range(user_clen):
                 ch = channellist[j]
                 if user_clen > 1:
@@ -415,6 +396,9 @@ class CubeBuildStep (Step):
                 self.pars_input['output_type'] = 'user'
             subchannellist = self.subchannel.split(',')
             user_blen = len(subchannellist)
+            valid_subchannel = ['short', 'medium', 'long', 'all', 'short-medium', 'short-long',
+                                'medium-short', 'medium-long', 'long-short', 'long-medium']
+
             for j in range(user_blen):
                 b = subchannellist[j]
                 if user_blen > 1:
@@ -439,6 +423,8 @@ class CubeBuildStep (Step):
                 self.pars_input['output_type'] = 'user'
             filterlist = self.filter.split(',')
             user_flen = len(filterlist)
+            valid_fwa = ['f070lp', 'f100lp',
+                         'g170lp', 'f290lp', 'clear', 'opaque', 'all']
             for j in range(user_flen):
                 f = filterlist[j]
                 if user_flen > 1:
@@ -457,11 +443,13 @@ class CubeBuildStep (Step):
 # covered by the data
         if self.grating == 'all':
             self.pars_input['grating'].append('all')
-        else:    # user has set value
+        else:# user has set value
             if not self.single:
                 self.pars_input['output_type'] = 'user'
             gratinglist = self.grating.split(',')
             user_glen = len(gratinglist)
+            valid_gwa = ['g140m', 'g140h', 'g235m', 'g235h',
+                         'g395m', 'g395h', 'prism', 'all']
             for j in range(user_glen):
 
                 g = gratinglist[j]

@@ -34,9 +34,7 @@ class KeyValueRegistry(UserDict):
     """
 
     def __init__(self, items=None, default=None):
-        super_args = ()
-        if items is not None:
-            super_args = (make_dict(items), )
+        super_args = (make_dict(items), ) if items is not None else ()
         super(KeyValueRegistry, self).__init__(*super_args)
 
         self.default = None
@@ -68,7 +66,7 @@ class KeyValueRegistry(UserDict):
 # ******
 class KeyValueRegistryError(Exception):
     def __init__(self, *args):
-        if len(args) == 0:
+        if not args:
             args = (self.msg, )
         super(KeyValueRegistryError, self).__init__(*args)
 

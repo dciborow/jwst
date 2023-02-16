@@ -35,7 +35,7 @@ def create_hdul(detector, channel, band):
     hdul = fits.HDUList()
     phdu = fits.PrimaryHDU()
     phdu.header['telescop'] = "JWST"
-    phdu.header['filename'] = "test" + channel + band
+    phdu.header['filename'] = f"test{channel}{band}"
     phdu.header['instrume'] = 'MIRI'
     phdu.header['detector'] = detector
     phdu.header['CHANNEL'] = channel
@@ -61,12 +61,11 @@ def create_datamodel(hdul):
 
 
 def create_reference_files(datamodel):
-    refs = {}
     step = AssignWcsStep()
-    for reftype in AssignWcsStep.reference_file_types:
-        refs[reftype] = step.get_reference_file(datamodel, reftype)
-
-    return refs
+    return {
+        reftype: step.get_reference_file(datamodel, reftype)
+        for reftype in AssignWcsStep.reference_file_types
+    }
 
 
 def run_test(model):

@@ -142,16 +142,13 @@ class DMSLevel2bBase(DMSBaseMixin, Association):
         bool
             True if it does.
         """
-        limit_reached = len(self.members_by_type('science')) >= 1
-        return limit_reached
+        return len(self.members_by_type('science')) >= 1
 
     def __eq__(self, other):
         """Compare equality of two associations"""
         if isinstance(other, DMSLevel2bBase):
             result = self.data['asn_type'] == other.data['asn_type']
-            result = result and (self.member_ids == other.member_ids)
-            return result
-
+            return result and (self.member_ids == other.member_ids)
         return NotImplemented
 
     def __ne__(self, other):
@@ -196,24 +193,19 @@ class DMSLevel2bBase(DMSBaseMixin, Association):
         except KeyError:
             exposerr = None
 
-        # Create the member.
-        # `is_item_tso` is used to determine whether the name should
-        # represent the integrations form of the data.
-        # Though coronagraphic data is not TSO,
-        # it does remain in the separate integrations.
-        member = Member(
+        return Member(
             {
                 'expname': Utility.rename_to_level2a(
                     item['filename'],
-                    use_integrations=self.is_item_tso(item, other_exp_types=CORON_EXP_TYPES),
+                    use_integrations=self.is_item_tso(
+                        item, other_exp_types=CORON_EXP_TYPES
+                    ),
                 ),
                 'exptype': self.get_exposure_type(item),
                 'exposerr': exposerr,
             },
-            item=item
+            item=item,
         )
-
-        return member
 
     def _init_hook(self, item):
         """Post-check and pre-add initialization"""
@@ -301,8 +293,7 @@ class DMSLevel2bBase(DMSBaseMixin, Association):
             ac_type = 'background'
         else:
             raise ValueError(
-                'Invalid association id specified: "{}"'
-                '\n\tMust be of form "oXXX" or "c1XXX"'.format(acid)
+                f'Invalid association id specified: "{acid}"\n\tMust be of form "oXXX" or "c1XXX"'
             )
         self._acid = ACID((acid, ac_type))
 
@@ -312,18 +303,9 @@ class DMSLevel2bBase(DMSBaseMixin, Association):
         for idx, item in enumerate(items, start=1):
             self.new_product()
             members = self.current_product['members']
-            if isinstance(item, tuple):
-                expname = item[0]
-            else:
-                expname = item
-
-            # check to see if kwargs are passed and if exptype is given
-            if kwargs:
-                if 'with_exptype' in kwargs:
-                    if item[1]:
-                        exptype = item[1]
-                    else:
-                        exptype = 'science'
+            expname = item[0] if isinstance(item, tuple) else item
+            if kwargs and 'with_exptype' in kwargs:
+                exptype = item[1] or 'science'
             member = Member({
                 'expname': expname,
                 'exptype': exptype
@@ -480,35 +462,30 @@ class DMSLevel2bBase(DMSBaseMixin, Association):
         """Create human readable version of the association
         """
 
-        result = ['Association {:s}'.format(self.asn_name)]
-
-        # Parameters of the association
-        result.append(
-            '    Parameters:'
-            '        Product type: {asn_type:s}'
-            '        Rule:         {asn_rule:s}'
-            '        Program:      {program:s}'
-            '        Target:       {target:s}'
-            '        Pool:         {asn_pool:s}'.format(
-                asn_type=getattr(self.data, 'asn_type', 'indetermined'),
-                asn_rule=getattr(self.data, 'asn_rule', 'indetermined'),
-                program=getattr(self.data, 'program', 'indetermined'),
-                target=getattr(self.data, 'target', 'indetermined'),
-                asn_pool=getattr(self.data, 'asn_pool', 'indetermined'),
-            )
-        )
-
-        result.append('        {:s}'.format(str(self.constraints)))
+        result = [
+            'Association {:s}'.format(self.asn_name),
+            (
+                '    Parameters:'
+                '        Product type: {asn_type:s}'
+                '        Rule:         {asn_rule:s}'
+                '        Program:      {program:s}'
+                '        Target:       {target:s}'
+                '        Pool:         {asn_pool:s}'.format(
+                    asn_type=getattr(self.data, 'asn_type', 'indetermined'),
+                    asn_rule=getattr(self.data, 'asn_rule', 'indetermined'),
+                    program=getattr(self.data, 'program', 'indetermined'),
+                    target=getattr(self.data, 'target', 'indetermined'),
+                    asn_pool=getattr(self.data, 'asn_pool', 'indetermined'),
+                )
+            ),
+            '        {:s}'.format(str(self.constraints)),
+        ]
 
         # Products of the association
-        for product in self.data['products']:
-            result.append(
-                '\t{} with {} members'.format(
-                    product['name'],
-                    len(product['members'])
-                )
-            )
-
+        result.extend(
+            f"\t{product['name']} with {len(product['members'])} members"
+            for product in self.data['products']
+        )
         # That's all folks
         result.append('\n')
         return '\n'.join(result)
@@ -599,25 +576,14 @@ class Utility():
             The Level 2a name
         """
         match = re.match(_LEVEL1B_REGEX, level1b_name)
-        if match is None or match.group('type') != '_uncal':
-            logger.warning((
-                'Item FILENAME="{}" is not a Level 1b name. '
-                'Cannot transform to Level 2a.'
-            ).format(
-                level1b_name
-            ))
+        if match is None or match['type'] != '_uncal':
+            logger.warning(
+                f'Item FILENAME="{level1b_name}" is not a Level 1b name. Cannot transform to Level 2a.'
+            )
             return level1b_name
 
-        suffix = 'rate'
-        if use_integrations:
-            suffix = 'rateints'
-        level2a_name = ''.join([
-            match.group('path'),
-            '_',
-            suffix,
-            match.group('extension')
-        ])
-        return level2a_name
+        suffix = 'rateints' if use_integrations else 'rate'
+        return ''.join([match['path'], '_', suffix, match['extension']])
 
     @staticmethod
     def resequence(*args, **kwargs):
@@ -674,10 +640,7 @@ class Utility():
                 merge_occurred = False
                 for current_product in current_asn['products']:
                     if product['name'] == current_product['name']:
-                        member_names = set([
-                            member['expname']
-                            for member in product['members']
-                        ])
+                        member_names = {member['expname'] for member in product['members']}
                         current_member_names = [
                             member['expname']
                             for member in current_product['members']
@@ -695,11 +658,7 @@ class Utility():
                 if not merge_occurred:
                     current_asn['products'].append(product)
 
-        merged_asns = [
-            asn
-            for asn in merged.values()
-        ]
-        return merged_asns
+        return list(merged.values())
 
 
 # -----------------
@@ -1054,10 +1013,7 @@ class AsnMixin_Lv2Nod:
             `None` if a complete association cannot be produced.
 
         """
-        if self.is_valid:
-            return self.make_nod_asns()
-        else:
-            return None
+        return self.make_nod_asns() if self.is_valid else None
 
 
 class AsnMixin_Lv2Special:
@@ -1117,17 +1073,13 @@ class AsnMixin_Lv2WFSS:
         directs = self.members_by_type('direct_image')
         if not directs:
             raise AssociationNotValidError(
-                '{} has no required direct image exposures'.format(
-                    self.__class__.__name__
-                )
+                f'{self.__class__.__name__} has no required direct image exposures'
             )
 
         sciences = self.members_by_type('science')
         if not sciences:
             raise AssociationNotValidError(
-                '{} has no required science exposure'.format(
-                    self.__class__.__name__
-                )
+                f'{self.__class__.__name__} has no required science exposure'
             )
         science = sciences[0]
 
@@ -1173,22 +1125,28 @@ class AsnMixin_Lv2WFSS:
         # Add the Level3 catalog, direct image, and segmentation map members
         lv3_direct_image_root = DMS_Level3_Base._dms_product_name(self)
         members.append(
-            Member({
-                'expname': lv3_direct_image_root + '_i2d.fits',
-                'exptype': 'direct_image'
-            })
+            Member(
+                {
+                    'expname': f'{lv3_direct_image_root}_i2d.fits',
+                    'exptype': 'direct_image',
+                }
+            )
         )
         members.append(
-            Member({
-                'expname': lv3_direct_image_root + '_cat.ecsv',
-                'exptype': 'sourcecat'
-            })
+            Member(
+                {
+                    'expname': f'{lv3_direct_image_root}_cat.ecsv',
+                    'exptype': 'sourcecat',
+                }
+            )
         )
         members.append(
-            Member({
-                'expname': lv3_direct_image_root + '_segm.fits',
-                'exptype': 'segmap'
-            })
+            Member(
+                {
+                    'expname': f'{lv3_direct_image_root}_segm.fits',
+                    'exptype': 'segmap',
+                }
+            )
         )
 
     def finalize(self):
@@ -1240,14 +1198,7 @@ class AsnMixin_Lv2WFSS:
         item = self.direct_image.item
         opt_elems = []
         for keys in [['filter', 'band'], ['pupil', 'grating']]:
-            opt_elem = getattr_from_list_nofail(
-                item, keys, _EMPTY
-            )[1]
-            if opt_elem:
+            if opt_elem := getattr_from_list_nofail(item, keys, _EMPTY)[1]:
                 opt_elems.append(opt_elem)
         opt_elems.sort(key=str.lower)
-        full_opt_elem = '-'.join(opt_elems)
-        if full_opt_elem == '':
-            full_opt_elem = 'clear'
-
-        return full_opt_elem
+        return '-'.join(opt_elems) or 'clear'

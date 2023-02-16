@@ -42,7 +42,4 @@ class AssignMTWcsStep(Step):
             input.meta.cal_step.assign_mtwcs = 'SKIPPED'
             return input
 
-        # Apply the step
-        result = assign_moving_target_wcs(input)
-
-        return result
+        return assign_moving_target_wcs(input)

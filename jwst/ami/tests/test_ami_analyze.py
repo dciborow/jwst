@@ -28,7 +28,7 @@ def test_utils_rebin():
     ''' Test of rebin() and krebin() in utils module '''
 
     arr = np.arange(24).reshape((3, 8)) / 10.0
-    rc = tuple((2, 2))
+    rc = 2, 2
 
     binned_arr = utils.rebin(arr, rc)
 
@@ -357,8 +357,6 @@ def test_leastsqnrm_model_array():
     """
     import warnings
 
-    test_res = []  # to accumulate subtest comparisons
-
     modelctrs = np.array(
         [
             [-0.01540951, -2.63995503],
@@ -398,8 +396,7 @@ def test_leastsqnrm_model_array():
             [0.46060077, 0.47992491, 0.49720953],
         ]
     )
-    test_res.append(np.allclose(pb_1, true_pb_1, rtol=1.0e-7))
-
+    test_res = [np.allclose(pb_1, true_pb_1, rtol=1.0e-7)]
     pb_2 = pb[25:28, 10:13]
     true_pb_2 = np.array(
         [
@@ -438,8 +435,8 @@ def test_leastsqnrm_ffc():
     Calculate cosine terms of analytic model.
     """
     ASIZE = 4
-    kx = np.arange(ASIZE * ASIZE).reshape((ASIZE, ASIZE))
-    ky = np.arange(ASIZE * ASIZE).reshape((ASIZE, ASIZE))
+    kx = np.arange(ASIZE**2).reshape((ASIZE, ASIZE))
+    ky = np.arange(ASIZE**2).reshape((ASIZE, ASIZE))
     vv = np.arange(ASIZE)
 
     for ii in np.arange(ASIZE):
@@ -482,8 +479,8 @@ def test_leastsqnrm_ffs():
     Calculate sine terms of analytic model.
     """
     ASIZE = 4
-    kx = np.arange(ASIZE * ASIZE).reshape((ASIZE, ASIZE))
-    ky = np.arange(ASIZE * ASIZE).reshape((ASIZE, ASIZE))
+    kx = np.arange(ASIZE**2).reshape((ASIZE, ASIZE))
+    ky = np.arange(ASIZE**2).reshape((ASIZE, ASIZE))
     vv = np.arange(ASIZE)
 
     for ii in np.arange(ASIZE):
@@ -695,15 +692,12 @@ def test_leastsqnrm_tan2visibilities():
     """Test of tan2visibilities in leastsqnrm module.
     From the solution to the fit, calculate the fringe amplitude and phase.
     """
-    test_res = []  # to accumulate subtest comparisons
-
     coeffs = np.array([1.0, 0.2, -0.3, -0.1, 0.4, 0.2, -0.5, -0.1, 0.2, 0.4])
 
     amp, delta = tan2visibilities(coeffs)
 
     true_amp = np.array([0.36055513, 0.41231056, 0.53851648, 0.2236068])
-    test_res.append(np.allclose(amp, true_amp, rtol=1.0e-7))
-
+    test_res = [np.allclose(amp, true_amp, rtol=1.0e-7)]
     true_delta = np.array([-0.98279372, 1.81577499, -1.19028995, 2.03444394])
     test_res.append(np.allclose(delta, true_delta, rtol=1.0e-7))
 
@@ -892,8 +886,8 @@ def test_analyticnrm2_interf(setup_sf):
     ''' Test of interf() in the analyticnrm2 module '''
 
     ASIZE = 4
-    kx = np.arange(ASIZE * ASIZE).reshape((ASIZE, ASIZE))
-    ky = np.arange(ASIZE * ASIZE).reshape((ASIZE, ASIZE))
+    kx = np.arange(ASIZE**2).reshape((ASIZE, ASIZE))
+    ky = np.arange(ASIZE**2).reshape((ASIZE, ASIZE))
     vv = np.arange(ASIZE)
 
     for ii in np.arange(ASIZE):
@@ -957,7 +951,7 @@ def test_analyticnrm2_phasor():
     ''' Test of phasor() in the analyticnrm2 module '''
 
     ASIZE = 4
-    kx = np.arange(ASIZE * ASIZE).reshape((ASIZE, ASIZE))
+    kx = np.arange(ASIZE**2).reshape((ASIZE, ASIZE))
 
     for ii in np.arange(ASIZE):
         kx[:, ii] = ii

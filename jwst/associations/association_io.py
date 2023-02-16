@@ -63,10 +63,8 @@ class json():
         try:
             asn = loader(serialized)
         except Exception as err:
-            logger.debug('Error unserializing: "{}"'.format(err))
-            raise AssociationNotValidError(
-                'Container is not JSON: "{}"'.format(serialized)
-            )
+            logger.debug(f'Error unserializing: "{err}"')
+            raise AssociationNotValidError(f'Container is not JSON: "{serialized}"')
 
         return asn
 
@@ -88,7 +86,7 @@ class json():
         """
         asn_filename = asn.asn_name
         if not asn_filename.endswith('.json'):
-            asn_filename = asn_filename+'.json'
+            asn_filename = f'{asn_filename}.json'
         return (asn_filename,
             json_lib.dumps(asn.data, cls=AssociationEncoder, indent=4, separators=(',', ': ')))
 
@@ -127,10 +125,8 @@ class yaml():
         try:
             asn = yaml_lib.safe_load(serialized)
         except Exception as err:
-            logger.debug('Error unserializing: "{}"'.format(err))
-            raise AssociationNotValidError(
-                'Container is not YAML: "{}"'.format(serialized)
-            )
+            logger.debug(f'Error unserializing: "{err}"')
+            raise AssociationNotValidError(f'Container is not YAML: "{serialized}"')
         return asn
 
     @staticmethod
@@ -152,7 +148,7 @@ class yaml():
         """
         asn_filename = asn.asn_name
         if not asn.asn_name.endswith('.yaml'):
-            asn_filename = asn.asn_name+'.yaml'
+            asn_filename = f'{asn.asn_name}.yaml'
         return (asn_filename, yaml_lib.dump(asn.data, default_flow_style=False))
 
 

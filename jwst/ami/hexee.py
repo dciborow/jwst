@@ -72,9 +72,7 @@ def g_eeAG(xi, eta, **kwargs):
     g4 = (np.sqrt(3) * eta + 3 * xi)
     g5 = (np.exp(i * Pi * eta / np.sqrt(3)) - np.exp(i * Pi * xi))
     g6 = (4 * Pi * Pi * (eta * eta * eta - 3 * eta * xi * xi))
-    g = g1 * (g2 * g3 + g4 * g5) / g6
-
-    return g
+    return g1 * (g2 * g3 + g4 * g5) / g6
 
 
 def glimit(xi, eta, **kwargs):
@@ -128,9 +126,7 @@ def glimit(xi, eta, **kwargs):
     g1 = (np.exp(-1j * Pi * xi) / (2 * np.sqrt(3) * Pi * Pi * xi * xi))
     g2 = (-1 + 1j * Pi * xi + np.exp(1j * Pi * xi) - 2j * Pi * xi *
           np.exp(1J * Pi * xi))
-    g = g1 * g2
-
-    return g
+    return g1 * g2
 
 
 def centralpix_limit():
@@ -150,9 +146,7 @@ def centralpix_limit():
         analytic limit of the Fourier transform of one half of the hexagon
         at the origin.
     """
-    g = np.sqrt(3) / 4.0
-
-    return g
+    return np.sqrt(3) / 4.0
 
 
 def mas2rad(mas):
@@ -171,8 +165,7 @@ def mas2rad(mas):
     rad: float
         angle in radians
     """
-    rad = mas * (10**(-3)) / (3600 * 180 / np.pi)
-    return rad
+    return mas * (10**(-3)) / (3600 * 180 / np.pi)
 
 
 def hex_eeAG(s=(121, 121), c=None, d=0.80, lam=4.3e-6,

@@ -137,15 +137,7 @@ class ProcessList:
             self.only_on_match = process_list.only_on_match
 
     def __str__(self):
-        result = '{}(n_items: {}, {})'.format(
-            self.__class__.__name__,
-            len(self.items),
-            {
-                str_attr: getattr(self, str_attr)
-                for str_attr in self._str_attrs
-            }
-        )
-        return result
+        return f'{self.__class__.__name__}(n_items: {len(self.items)}, {{str_attr: getattr(self, str_attr) for str_attr in self._str_attrs}})'
 
 
 class ProcessQueue(deque):
@@ -167,7 +159,7 @@ class ProcessListQueue:
         List of ProcessLists to put on the queue.
     """
     def __init__(self, init=None):
-        self._queue = dict()
+        self._queue = {}
         if init is not None:
             self.extend(init)
 
@@ -187,8 +179,7 @@ class ProcessListQueue:
     def items(self):
         """Return list generator of all items"""
         for plhash in self._queue:
-            for item in self._queue[plhash].items:
-                yield item
+            yield from self._queue[plhash].items
 
     def popleft(self):
         """Pop the first-in object"""
@@ -208,8 +199,7 @@ class ProcessListQueue:
                 break
 
     def __str__(self):
-        result = f'{self.__class__.__name__}: rulesets {len(self)} items {len(list(self.items()))}'
-        return result
+        return f'{self.__class__.__name__}: rulesets {len(self)} items {len(list(self.items()))}'
 
 
 class ProcessQueueSorted:
@@ -276,12 +266,11 @@ def workover_filter(process_list, work_over):
         None if the process list should not be continued.
     """
     result = process_list
-    if process_list.work_over in [ListCategory.RULES, ListCategory.BOTH]:
+    if result.work_over in [ListCategory.RULES, ListCategory.BOTH]:
         if work_over in [ListCategory.RULES, ListCategory.BOTH]:
             result.work_over = ListCategory.BOTH
         else:
             result.work_over = work_over
-    else:
-        if work_over not in [ListCategory.RULES, ListCategory.BOTH]:
-            result = None
+    elif work_over not in [ListCategory.RULES, ListCategory.BOTH]:
+        result = None
     return result

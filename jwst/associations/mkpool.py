@@ -125,11 +125,7 @@ def mkpool(data,
             keyword.lower(): str(value)
             for keyword, value in header.items()
             if keyword not in IGNORE_KEYS
-        }
-
-        # Update non-header parameters
-        valid_params.update(non_header_params)
-
+        } | non_header_params
         # Setup association candidates
         combined_asn_candidates = [(f"o{header['observtn']}", "observation")]
         if isinstance(asn_candidate, str):
@@ -146,9 +142,7 @@ def mkpool(data,
             targetid += 1
         valid_params['targetid'] = str(targetid)
 
-        # Add the exposure
-        final_params = copy(defaults)
-        final_params.update(valid_params)
+        final_params = copy(defaults) | valid_params
         pool.add_row(final_params)
 
     return pool

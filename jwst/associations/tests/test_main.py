@@ -109,13 +109,10 @@ def test_toomanyoptions(args):
 def pool():
     """Retrieve pool path"""
     pool_path = t_path(os.path.join('data', POOL_PATH))
-    pool = combine_pools(pool_path)
-
-    return pool
+    return combine_pools(pool_path)
 
 
 @pytest.fixture(scope='module')
 def all_candidates(pool):
     """"Retrieve the all exposure pool"""
-    all_candidates = Main.cli(['--dry-run', '--all-candidates'], pool=pool)
-    return all_candidates
+    return Main.cli(['--dry-run', '--all-candidates'], pool=pool)

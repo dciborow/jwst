@@ -15,17 +15,13 @@ from jwst.associations import AssociationRegistry
 def dms_registry():
     """Create the registry"""
     dms_test_rules_path = t_path(path.join('data', 'dms_rules.py'))
-    dms_registry = AssociationRegistry(
-        [dms_test_rules_path], include_default=False
-    )
-    return dms_registry
+    return AssociationRegistry([dms_test_rules_path], include_default=False)
 
 
 @pytest.fixture(scope='module')
 def dms_asns(dms_registry):
     """Create basic associations"""
-    result = dms_registry.match('item')
-    return result
+    return dms_registry.match('item')
 
 
 def test_asn_name(dms_asns):

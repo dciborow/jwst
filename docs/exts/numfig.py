@@ -24,7 +24,7 @@ def latex_visit_num_ref(self, node):
     fields = node['reftarget'].split('#')
     if len(fields) > 1:
         label, target = fields
-        ref_link = '%s:%s' % (node['refdoc'], target)
+        ref_link = f"{node['refdoc']}:{target}"
         latex = "\\hyperref[%s]{%s \\ref*{%s}}" % (ref_link, label, ref_link)
         self.body.append(latex)
     else:
@@ -46,9 +46,8 @@ def doctree_read(app, doctree):
 
 
 def doctree_resolved(app, doctree, docname):
-    i = 1
     figids = {}
-    for figure_info in doctree.traverse(figure):
+    for i, figure_info in enumerate(doctree.traverse(figure), start=1):
         if app.builder.name != 'latex' and app.config.number_figures:
             for cap in figure_info.traverse(caption):
                 cap[0] = Text("%s %d: %s" % (app.config.figure_caption_prefix, i, cap[0]))
@@ -56,15 +55,12 @@ def doctree_resolved(app, doctree, docname):
         for id in figure_info['ids']:
             figids[id] = i
 
-        i += 1
-
-
     # replace numfig nodes with links
     if app.builder.name != 'latex':
         for ref_info in doctree.traverse(num_ref):
             if '#' in ref_info['reftarget']:
                 label, target = ref_info['reftarget'].split('#')
-                labelfmt = label + " %d"
+                labelfmt = f"{label} %d"
             else:
                 labelfmt = '%d'
                 target = ref_info['reftarget']
@@ -74,9 +70,8 @@ def doctree_resolved(app, doctree, docname):
 
             if app.builder.name == 'html':
                 target_doc = app.builder.env.figid_docname_map[target]
-                link = "%s#%s" % (app.builder.get_relative_uri(docname, target_doc),
-                                  target)
-                html = '<a class="pageref" href="%s">%s</a>' % (link, labelfmt %(figids[target]))
+                link = f"{app.builder.get_relative_uri(docname, target_doc)}#{target}"
+                html = f'<a class="pageref" href="{link}">{labelfmt % figids[target]}</a>'
                 ref_info.replace_self(raw(html, html, format='html'))
             else:
                 ref_info.replace_self(Text(labelfmt % (figids[target])))

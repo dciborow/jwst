@@ -81,8 +81,7 @@ class InputSpectrumModel:
         elif exptime_key == "unit_weight":
             self.unit_weight = True
         else:
-            raise RuntimeError("Don't understand exptime_key = '%s'" %
-                               exptime_key)
+            raise RuntimeError(f"Don't understand exptime_key = '{exptime_key}'")
 
         try:
             self.right_ascension[:], self.declination[:], _ = spec.meta.wcs(0.)
@@ -201,9 +200,7 @@ class OutputSpectrumModel:
         self.sb_unit = input_spectra[0].sb_unit
 
         n_nan = 0                                       # initial value
-        ninputs = 0
-        for in_spec in input_spectra:
-            ninputs += 1
+        for ninputs, in_spec in enumerate(input_spectra, start=1):
             log.info(f'Accumulating data from input spectrum {ninputs}')
             # Get the pixel numbers in the output corresponding to the
             # wavelengths of the current input spectrum.
@@ -347,12 +344,8 @@ def count_input(input_spectra):
     wl = None
     for in_spec in input_spectra:
         input_wl = in_spec.wavelength
-        # only include spectra that have more than 1 data point
         if len(input_wl) > 1:
-            if wl is None:
-                wl = input_wl
-            else:
-                wl = np.hstack((input_wl, wl))
+            wl = input_wl if wl is None else np.hstack((input_wl, wl))
     wl.sort()
     nwl = len(wl)
 
@@ -477,9 +470,8 @@ def compute_output_wl(wl, n_input_spectra):
             elif k == nwl - 1:
                 if sigma[k] < cutoff * sigma[nwl - 2]:
                     temp_wl[k] = mean_wl[k]
-            else:
-                if sigma[k] < cutoff * (sigma[k - 1] + sigma[k + 1]) / 2.:
-                    temp_wl[k] = mean_wl[k]
+            elif sigma[k] < cutoff * (sigma[k - 1] + sigma[k + 1]) / 2.:
+                temp_wl[k] = mean_wl[k]
 
     # Fill gaps in the output wavelengths by taking averages of the
     # input wavelengths.  If there are n overlapping input spectra,
@@ -538,7 +530,7 @@ def check_exptime(exptime_key):
             exptime_lwr == "effexptm":
         exptime_key = "exposure_time"
         log.info("Using exposure time as the weight.")
-    elif exptime_lwr == "unit_weight" or exptime_lwr == "unit weight":
+    elif exptime_lwr in ["unit_weight", "unit weight"]:
         exptime_key = "unit_weight"
         log.info("Using weight = 1.")
     else:
@@ -572,7 +564,7 @@ def combine_1d_spectra(input_model, exptime_key):
         A datamodels.CombinedSpecModel object.
     """
 
-    log.debug("Using exptime_key = {}.".format(exptime_key))
+    log.debug(f"Using exptime_key = {exptime_key}.")
 
     exptime_key = check_exptime(exptime_key)
 
@@ -594,9 +586,9 @@ def combine_1d_spectra(input_model, exptime_key):
             input_spectra[spectral_order].append(InputSpectrumModel(
                 input_model, in_spec, exptime_key))
 
-    for order in input_spectra:
+    for order, value in input_spectra.items():
         output_spectra[order] = OutputSpectrumModel()
-        output_spectra[order].assign_wavelengths(input_spectra[order])
+        output_spectra[order].assign_wavelengths(value)
         output_spectra[order].accumulate_sums(input_spectra[order])
         output_spectra[order].compute_combination()
 
@@ -619,11 +611,11 @@ def combine_1d_spectra(input_model, exptime_key):
     output_model.meta.wcs = output_spectra[list(output_spectra)[0]].wcs
     output_model.meta.cal_step.combine_1d = 'COMPLETE'
 
-    for order in input_spectra:
-        for in_spec in input_spectra[order]:
+    for value_ in input_spectra.values():
+        for in_spec in value_:
             in_spec.close()
 
-    for order in output_spectra:
-        output_spectra[order].close()
+    for value__ in output_spectra.values():
+        value__.close()
 
     return output_model

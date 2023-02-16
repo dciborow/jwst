@@ -717,10 +717,7 @@ class Asn_Lv3SpectralTarget(AsnMixin_Spectrum):
             `None` if a complete association cannot be produced.
 
         """
-        if self.is_valid:
-            return self.make_fixedslit_bkg()
-
-        return None
+        return self.make_fixedslit_bkg() if self.is_valid else None
 
 
 @RegistryMarker.rule
@@ -899,11 +896,7 @@ class Asn_Lv3WFSCMB(AsnMixin_Science):
         bool
             True if there are two members.
         """
-        if entry is None:
-            count = 2
-        else:
-            count = 1
-
+        count = 2 if entry is None else 1
         return len(self.current_product['members']) == count
 
     def _validate_candidates(self, member):
@@ -921,10 +914,7 @@ class Asn_Lv3WFSCMB(AsnMixin_Science):
         """
 
         # If a group candidate, reject.
-        if self.acid.type.lower() == 'group':
-            return False
-
-        return True
+        return self.acid.type.lower() != 'group'
 
 @RegistryMarker.rule
 class Asn_Lv3WFSSNIS(AsnMixin_Spectrum):

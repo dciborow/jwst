@@ -29,15 +29,12 @@ def load_wcs(input_model, reference_files={}, nrs_slit_y_range=None):
     """
     if reference_files:
         for ref_type, ref_file in reference_files.items():
-            if ref_file not in ["N/A", ""]:
-                reference_files[ref_type] = ref_file
-            else:
-                reference_files[ref_type] = None
+            reference_files[ref_type] = ref_file if ref_file not in ["N/A", ""] else None
     if not any(reference_files.values()):
         log.critical("assign_wcs needs reference files to compute the WCS, none were passed")
         raise ValueError("assign_wcs needs reference files to compute the WCS, none were passed")
     instrument = input_model.meta.instrument.name.lower()
-    mod = importlib.import_module('.' + instrument, 'jwst.assign_wcs')
+    mod = importlib.import_module(f'.{instrument}', 'jwst.assign_wcs')
 
     if input_model.meta.exposure.type.lower() in SPEC_TYPES or \
        input_model.meta.instrument.lamp_mode.lower() in NRS_LAMP_MODE_SPEC_TYPES:
@@ -76,8 +73,9 @@ def load_wcs(input_model, reference_files={}, nrs_slit_y_range=None):
                 try:
                     update_s_region_imaging(output_model)
                 except Exception as exc:
-                    log.error("Unable to update S_REGION for type {}: {}".format(
-                        output_model.meta.exposure.type, exc))
+                    log.error(
+                        f"Unable to update S_REGION for type {output_model.meta.exposure.type}: {exc}"
+                    )
                 else:
                     log.info("assign_wcs updated S_REGION to {0}".format(
                         output_model.meta.wcsinfo.s_region))
@@ -91,8 +89,9 @@ def load_wcs(input_model, reference_files={}, nrs_slit_y_range=None):
                 try:
                     update_s_region_spectral(output_model)
                 except Exception as exc:
-                    log.info("Unable to update S_REGION for type {}: {}".format(
-                        output_model.meta.exposure.type, exc))
+                    log.info(
+                        f"Unable to update S_REGION for type {output_model.meta.exposure.type}: {exc}"
+                    )
 
     log.info("COMPLETED assign_wcs")
     return output_model

@@ -1,4 +1,5 @@
 """Association attributes common to DMS-based Rules"""
+
 from jwst.associations.lib.counter import Counter
 
 from jwst.associations.exceptions import (
@@ -99,9 +100,8 @@ IMAGE2_NONSCIENCE_EXP_TYPES = [
     'nrc_focus',
     'nrs_focus',
     'nrs_image',
+    *ACQ_EXP_TYPES,
 ]
-IMAGE2_NONSCIENCE_EXP_TYPES.extend(ACQ_EXP_TYPES)
-
 SPEC2_SCIENCE_EXP_TYPES = [
     'mir_lrs-fixedslit',
     'mir_lrs-slitless',
@@ -293,11 +293,10 @@ class DMSBaseMixin(ACIDMixin):
             return self._asn_name
 
         program = self.data['program']
-        version_id = self.version_id
         asn_type = self.data['asn_type']
         sequence = self.sequence
 
-        if version_id:
+        if version_id := self.version_id:
             name = _ASN_NAME_TEMPLATE_STAMP.format(
                 program=program,
                 acid=self.acid.id,
@@ -339,12 +338,11 @@ class DMSBaseMixin(ACIDMixin):
     @property
     def member_ids(self):
         """Set of all member ids in all products of this association"""
-        member_ids = set(
+        return {
             member[MEMBER_KEY]
             for product in self['products']
             for member in product['members']
-        )
-        return member_ids
+        }
 
     @property
     def validity(self):
@@ -405,10 +403,7 @@ class DMSBaseMixin(ACIDMixin):
         except KeyError:
             return False
 
-        for member in current_members:
-            if member == new_member:
-                return True
-        return False
+        return any(member == new_member for member in current_members)
 
     def is_item_member(self, item):
         """Check if item is already a member of this association
@@ -606,8 +601,7 @@ class DMSBaseMixin(ACIDMixin):
             The Level3 Product name representation
             of the instrument
         """
-        instrument = format_list(self.constraints['instrument'].found_values)
-        return instrument
+        return format_list(self.constraints['instrument'].found_values)
 
     def _get_opt_element(self):
         """Get string representation of the optical elements
@@ -634,11 +628,7 @@ class DMSBaseMixin(ACIDMixin):
         # Build the string. Sort the elements in order to
         # create data-independent results
         opt_elems.sort(key=str.lower)
-        opt_elem = '-'.join(opt_elems)
-        if opt_elem == '':
-            opt_elem = 'clear'
-
-        return opt_elem
+        return '-'.join(opt_elems) or 'clear'
 
     def _get_subarray(self):
         """Get string representation of the subarray
@@ -649,17 +639,13 @@ class DMSBaseMixin(ACIDMixin):
             The Level3 Product name representation
             of the subarray.
         """
-        result = ''
         try:
             subarray = format_list(self.constraints['subarray'].found_values)
         except KeyError:
             subarray = None
         if subarray == 'full':
             subarray = None
-        if subarray is not None:
-            result = subarray
-
-        return result
+        return subarray if subarray is not None else ''
 
     def _get_target(self):
         """Get string representation of the target
@@ -671,8 +657,7 @@ class DMSBaseMixin(ACIDMixin):
             of the target or source ID.
         """
         target_id = format_list(self.constraints['target'].found_values)
-        target = 't{0:0>3s}'.format(str(target_id))
-        return target
+        return 't{0:0>3s}'.format(str(target_id))
 
     def _get_grating(self):
         """Get string representation of the grating in use
@@ -684,8 +669,7 @@ class DMSBaseMixin(ACIDMixin):
             of the grating in use.
         """
         grating_id = format_list(self.constraints['grating'].found_values)
-        grating = '{0:0>3s}'.format(str(grating_id))
-        return grating
+        return '{0:0>3s}'.format(str(grating_id))
 
 
 # -----------------
@@ -886,10 +870,7 @@ def item_getattr(item, attributes, association=None):
     KeyError
         None of the attributes are found in the dict.
     """
-    if association is None:
-        invalid_values = _EMPTY
-    else:
-        invalid_values = association.INVALID_VALUES
+    invalid_values = _EMPTY if association is None else association.INVALID_VALUES
     return getattr_from_list(
         item,
         attributes,
@@ -931,11 +912,8 @@ def nrsifu_valid_detector(item):
     elif grating == 'prism' and filter == 'clear' and detector == 'nrs1':
         return True
     elif grating == 'g140h':
-        if filter == 'f100lp':
+        if filter == 'f100lp' or filter == 'f070lp' and detector == 'nrs1':
             return True
-        elif filter == 'f070lp' and detector == 'nrs1':
-            return True
-
     # Nothing has matched. Not valid.
     return False
 
@@ -974,7 +952,7 @@ def nrslamp_valid_detector(item):
         elif grating == 'g140h':
             # short-wave, high-res grating results in data on both detectors,
             # except when lamp FLAT4 is in use (no data on NRS2)
-            if not (detector == 'nrs2' and lamp == 'flat4'):
+            if detector != 'nrs2' or lamp != 'flat4':
                 return True
 
     elif opmode in ['fixedslit']:

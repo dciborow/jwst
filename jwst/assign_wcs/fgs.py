@@ -87,11 +87,12 @@ def imaging(input_model, reference_files):
         v3_ref=input_model.meta.wcsinfo.v3_ref
     )
 
-    pipeline = [(detector, distortion),
-                (v2v3, va_corr),
-                (v2v3vacorr, tel2sky),
-                (world, None)]
-    return pipeline
+    return [
+        (detector, distortion),
+        (v2v3, va_corr),
+        (v2v3vacorr, tel2sky),
+        (world, None),
+    ]
 
 
 def imaging_distortion(input_model, reference_files):

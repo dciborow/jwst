@@ -182,14 +182,11 @@ def matrix_dft(plane, nlamD, npix,
     if inverse:
         expYV = np.exp(-2.0 * np.pi * -1j * YV).T
         expXU = np.exp(-2.0 * np.pi * -1j * XU)
-        t1 = np.dot(expYV, plane)
-        t2 = np.dot(t1, expXU)
     else:
         expXU = np.exp(-2.0 * np.pi * 1j * XU)
         expYV = np.exp(-2.0 * np.pi * 1j * YV).T
-        t1 = np.dot(expYV, plane)
-        t2 = np.dot(t1, expXU)
-
+    t1 = np.dot(expYV, plane)
+    t2 = np.dot(t1, expXU)
     norm_coeff = np.sqrt((nlamDY * nlamDX) / (npupY * npupX * npixY * npixX))
 
     return norm_coeff * t2
@@ -249,18 +246,16 @@ class MatrixFourierTransform:
                    "type = {0}".format(centering))
 
     def _validate_args(self, nlamD, npix, offset):
-        if self.centering == SYMMETRIC:
-            if not np.isscalar(nlamD) or not np.isscalar(npix):
-                raise RuntimeError(
-                    'The selected centering mode, {}, does not support '
-                    'rectangular arrays.'.format(self.centering)
-                )
-        if self.centering == FFTSTYLE or self.centering == SYMMETRIC:
-            if offset is not None:
-                raise RuntimeError(
-                    'The selected centering mode, {}, does not support '
-                    'position offsets.'.format(self.centering)
-                )
+        if self.centering == SYMMETRIC and (
+            not np.isscalar(nlamD) or not np.isscalar(npix)
+        ):
+            raise RuntimeError(
+                f'The selected centering mode, {self.centering}, does not support rectangular arrays.'
+            )
+        if self.centering in [FFTSTYLE, SYMMETRIC] and offset is not None:
+            raise RuntimeError(
+                f'The selected centering mode, {self.centering}, does not support position offsets.'
+            )
 
     def perform(self, pupil, nlamD, npix, offset=None):
         """Forward matrix discrete Fourier Transform
@@ -294,13 +289,7 @@ class MatrixFourierTransform:
         """
         self._validate_args(nlamD, npix, offset)
         _log.debug(
-            "Forward MatrixFourierTransform: array shape {}, "
-            "centering style {}, "
-            "output region size {} in lambda / D units, "
-            "output array size {} pixels, "
-            "offset {}".format(pupil.shape, self.centering, nlamD, npix,
-                               offset)
-
+            f"Forward MatrixFourierTransform: array shape {pupil.shape}, centering style {self.centering}, output region size {nlamD} in lambda / D units, output array size {npix} pixels, offset {offset}"
         )
         return matrix_dft(pupil, nlamD, npix,
                           centering=self.centering, offset=offset)
@@ -336,12 +325,7 @@ class MatrixFourierTransform:
         """
         self._validate_args(nlamD, npix, offset)
         _log.debug(
-            "Inverse MatrixFourierTransform: array shape {}, "
-            "centering style {}, "
-            "output region size {} in lambda / D units, "
-            "output array size {} pixels, "
-            "offset {}".format(image.shape, self.centering, nlamD, npix,
-                               offset)
+            f"Inverse MatrixFourierTransform: array shape {image.shape}, centering style {self.centering}, output region size {nlamD} in lambda / D units, output array size {npix} pixels, offset {offset}"
         )
         return matrix_idft(image, nlamD, npix,
                            centering=self.centering, offset=offset)

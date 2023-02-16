@@ -98,7 +98,7 @@ class DataTypes():
             self.input_models = input_try
 
         else:
-            raise TypeError("Failed to process file type {}".format(type(input_try)))
+            raise TypeError(f"Failed to process file type {type(input_try)}")
 
 # if the user has set the output name - strip out *.fits
 # later suffixes will be added to this name to designate the
@@ -109,7 +109,7 @@ class DataTypes():
             self.output_name = basename
 
         if output_dir is not None:
-            self.output_name = output_dir + '/' + self.output_name
+            self.output_name = f'{output_dir}/{self.output_name}'
 
 # _______________________________________________________________________________
     def build_product_name(self, filename):
@@ -132,12 +132,11 @@ class DataTypes():
         indx_try2 = filename.rfind('_cal.fits')
 
         if indx_try > 0:
-            single_product = filename[:indx_try]
+            return filename[:indx_try]
         elif indx_try2 > 0:
-            single_product = filename[:indx_try2]
+            return filename[:indx_try2]
         else:
-            single_product = filename[:indx]
-        return single_product
+            return filename[:indx]
 
 # _______________________________________________________________________________
 

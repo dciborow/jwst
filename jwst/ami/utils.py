@@ -167,10 +167,12 @@ class Affine2d():
         trans_point: float, float
             coordinates in distorted space
         """
-        trans_point = np.array((self.mx * point[0] + self.sx * point[1] + self.xo,
-                                self.my * point[1] + self.sy * point[0] + self.yo))
-
-        return trans_point
+        return np.array(
+            (
+                self.mx * point[0] + self.sx * point[1] + self.xo,
+                self.my * point[1] + self.sy * point[0] + self.yo,
+            )
+        )
 
     def reverse(self, point):
         """
@@ -188,13 +190,21 @@ class Affine2d():
         trans_point: float, float
             coordinates in ideal space
         """
-        trans_point = np.array(
-            (self.my * point[0] - self.sx * point[1] -
-             self.my * self.xo + self.sx * self.yo,
-             self.mx * point[1] - self.sy * point[0] -
-             self.mx * self.yo + self.sy * self.xo)) * self.determinant
-
-        return trans_point
+        return (
+            np.array(
+                (
+                    self.my * point[0]
+                    - self.sx * point[1]
+                    - self.my * self.xo
+                    + self.sx * self.yo,
+                    self.mx * point[1]
+                    - self.sy * point[0]
+                    - self.mx * self.yo
+                    + self.sy * self.xo,
+                )
+            )
+            * self.determinant
+        )
 
     def distortFargs(self, u, v):
         """
@@ -246,10 +256,13 @@ class Affine2d():
         phase: complex array
             phase term divided by the determinant.
         """
-        phase = np.exp(2 * np.pi * 1j / self.determinant *
-                       (self.phase_2vector[0] * u + self.phase_2vector[1] * v))
-
-        return phase
+        return np.exp(
+            2
+            * np.pi
+            * 1j
+            / self.determinant
+            * (self.phase_2vector[0] * u + self.phase_2vector[1] * v)
+        )
 
     def get_rotd(self):
         """
@@ -267,11 +280,7 @@ class Affine2d():
         rotd: float
             rotation used to creat a pure rotation affine2d
         """
-        if self.rotradccw:
-            rotd = 180.0 * self.rotradccw / np.pi
-            return rotd
-        else:
-            return None
+        return 180.0 * self.rotradccw / np.pi if self.rotradccw else None
 
 
 def affinepars2header(hdr, affine2d):
@@ -371,13 +380,15 @@ def trim(m, s):
         # Go through all indices in the mask:
         # the x & y lists test for any index being an edge index - if none are
         # on the edge, remember the indices in new list
-        if (m[0][ii] == 0 or m[1][ii] == 0 or m[0][ii] == s - 1 or
-                m[1][ii] == s - 1) is False:
+        if (
+            m[0][ii] != 0
+            and m[1][ii] != 0
+            and m[0][ii] != s - 1
+            and m[1][ii] != s - 1
+        ):
             xl.append(m[0][ii])
             yl.append(m[1][ii])
-    m_masked = (np.asarray(xl), np.asarray(yl))
-
-    return m_masked
+    return np.asarray(xl), np.asarray(yl)
 
 
 def avoidhexsingularity(rotation):
@@ -400,11 +411,7 @@ def avoidhexsingularity(rotation):
     """
     diagnostic = rotation / 15.0 - int(rotation / 15.0)
     epsilon = 1.0e-12
-    if abs(diagnostic) < epsilon / 2.0:
-        rotation_adjusted = rotation + epsilon
-    else:
-        rotation_adjusted = rotation
-    return rotation_adjusted
+    return rotation + epsilon if abs(diagnostic) < epsilon / 2.0 else rotation
 
 
 def center_imagepeak(img, r='default', cntrimg=True):
@@ -433,12 +440,10 @@ def center_imagepeak(img, r='default', cntrimg=True):
     log.debug(' peakx=%g, peaky=%g, distance to edge=%g', peakx, peaky, h)
     if r == 'default':
         r = h.copy()
-    else:
-        pass
-
-    cropped = img[int(peakx - r):int(peakx + r + 1), int(peaky - r):int(peaky + r + 1)]
-
-    return cropped
+    return img[
+        int(peakx - r) : int(peakx + r + 1),
+        int(peaky - r) : int(peaky + r + 1),
+    ]
 
 
 def centerpoint(s):
@@ -579,9 +584,7 @@ def quadratic_extremum(p):
     y_max: float
         maximum of the quadratic
     """
-    y_max = -p[1] / (2.0 * p[0]), -p[1] * p[1] / (4.0 * p[0]) + p[2]
-
-    return y_max
+    return -p[1] / (2.0 * p[0]), -p[1] * p[1] / (4.0 * p[0]) + p[2]
 
 
 def findpeak_1d(yvec, xvec):
@@ -688,8 +691,7 @@ def findslope(a, m):
     # determine units of tilt -
     G = a.shape[0] / (2.0 * np.pi), a.shape[1] / (2.0 * np.pi)
 
-    slopes = G[0] * tilt[0][newmaskh].mean(), G[1] * tilt[1][newmaskv].mean()
-    return slopes
+    return G[0] * tilt[0][newmaskh].mean(), G[1] * tilt[1][newmaskv].mean()
 
 
 def quadratic(p, x):
@@ -779,12 +781,11 @@ def makeA(nh):
         for h1 in range(h2 + 1, nh):
             if h1 >= nh:
                 break
-            else:
-                log.debug(' row: %s, h1: %s, h2: %s', row, h1, h2)
+            log.debug(' row: %s, h1: %s, h2: %s', row, h1, h2)
 
-                matrixA[row, h2] = -1
-                matrixA[row, h1] = +1
-                row += 1
+            matrixA[row, h2] = -1
+            matrixA[row, h1] = +1
+            row += 1
 
     log.debug('matrixA:')
     log.debug(' %s', matrixA)
@@ -840,9 +841,7 @@ def rebin(a=None, rc=(2, 2)):
     binned_arr: float array
         binned array
     """
-    binned_arr = krebin(a, (a.shape[0] // rc[0], a.shape[1] // rc[1]))
-
-    return binned_arr
+    return krebin(a, (a.shape[0] // rc[0], a.shape[1] // rc[1]))
 
 
 def krebin(a, shape):
@@ -865,9 +864,7 @@ def krebin(a, shape):
         reshaped input array
     """
     sh = shape[0], a.shape[0] // shape[0], shape[1], a.shape[1] // shape[1]
-    reshaped_a = a.reshape(sh).sum(-1).sum(1)
-
-    return reshaped_a
+    return a.reshape(sh).sum(-1).sum(1)
 
 
 def rcrosscorrelate(a=None, b=None):
@@ -921,11 +918,9 @@ def lambdasteps(lam, frac_width, steps=4):
     frac = frac_width / 2.0
     steps = steps / 2.0
 
-    # add some very small number to the end to include the last number.
-    lambda_array = np.arange(-1 * frac * lam + lam, frac * lam + lam + 10e-10,
-                             frac * lam / steps)
-
-    return lambda_array
+    return np.arange(
+        -1 * frac * lam + lam, frac * lam + lam + 10e-10, frac * lam / steps
+    )
 
 
 def tophatfilter(lam_c, frac_width, npoints=10):
@@ -951,10 +946,7 @@ def tophatfilter(lam_c, frac_width, npoints=10):
         tophat filter list
     """
     wllist = lambdasteps(lam_c, frac_width, steps=npoints)
-    filt = []
-    for ii in range(len(wllist)):
-        filt.append(np.array([1.0, wllist[ii]]))
-    return filt
+    return [np.array([1.0, wllist[ii]]) for ii in range(len(wllist))]
 
 
 def crosscorrelate(a=None, b=None):
@@ -1026,13 +1018,11 @@ def rotate2dccw(vectors, thetarad):
         rotated vectors
     """
     c, s = (np.cos(thetarad), np.sin(thetarad))
-    ctrs_rotated = []
-    for vector in vectors:
-        ctrs_rotated.append([c * vector[0] - s * vector[1],
-                             s * vector[0] + c * vector[1]])
-    rot_vectors = np.array(ctrs_rotated)
-
-    return rot_vectors
+    ctrs_rotated = [
+        [c * vector[0] - s * vector[1], s * vector[0] + c * vector[1]]
+        for vector in vectors
+    ]
+    return np.array(ctrs_rotated)
 
 
 def findmax(mag, vals, mid=1.0):
@@ -1139,8 +1129,7 @@ def mas2rad(mas):
     rad: float
         angle in radians
     """
-    rad = mas * (10**(-3)) / (3600 * 180 / np.pi)
-    return rad
+    return mas * (10**(-3)) / (3600 * 180 / np.pi)
 
 
 def img_median_replace(img_model, box_size):

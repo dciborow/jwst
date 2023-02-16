@@ -54,7 +54,7 @@ def do_correction(input_model, barshadow_model=None, inverse=False, source_type=
     # -1 to 1 in their Y value WCS.
 
     exp_type = input_model.meta.exposure.type
-    log.debug('EXP_TYPE = %s' % exp_type)
+    log.debug(f'EXP_TYPE = {exp_type}')
 
     # Create output as a copy of the input science data model
     output_model = input_model.copy()
@@ -207,8 +207,7 @@ def create_shutter_elements(barshadow_model):
     """
     shadow1x1 = barshadow_model.data1x1
     shadow1x3 = barshadow_model.data1x3
-    shutter_elements = {}
-    shutter_elements['first'] = create_first(shadow1x1)
+    shutter_elements = {'first': create_first(shadow1x1)}
     shutter_elements['open_open'] = create_open_open(shadow1x3)
     shutter_elements['open_closed'] = create_open_closed(shadow1x1)
     shutter_elements['closed_open'] = create_closed_open(shadow1x1)
@@ -345,10 +344,7 @@ def create_shadow(shutter_elements, shutter_status):
     first_row = first_row + shutter_elements['first'].shape[0] - 1
     last_shutter = 'open'
     for this_status in shutter_status[1:]:
-        if this_status == '0':
-            this_shutter = 'closed'
-        else:
-            this_shutter = 'open'
+        this_shutter = 'closed' if this_status == '0' else 'open'
         shutter_pair = '_'.join((last_shutter, this_shutter))
         shadow = add_next_shutter(shadow, shutter_elements[shutter_pair], first_row)
         first_row = first_row + shutter_elements[shutter_pair].shape[0] - 1
@@ -376,8 +372,7 @@ def create_empty_shadow_array(nshutters):
     # and go from -1 to +1 in Y
     nrows = nshutters * 500 + 500
     ncolumns = 101
-    empty_shadow = np.zeros((nrows, ncolumns))
-    return empty_shadow
+    return np.zeros((nrows, ncolumns))
 
 
 def add_first_half_shutter(shadow, shadow_element):
@@ -506,10 +501,8 @@ def interpolate(rows, columns, array, default=np.nan):
                     array_row = nrows_out - 1
                 if array_column >= ncols_out:
                     array_column = ncols_out - 1
-                if array_row < 0:
-                    array_row = 0
-                if array_column < 0:
-                    array_column = 0
+                array_row = max(array_row, 0)
+                array_column = max(array_column, 0)
                 ix = int(array_column)
                 iy = int(array_row)
                 a11 = augmented_array[iy, ix]
@@ -539,15 +532,9 @@ def has_uniform_source(slitlet, force_type=None):
     answer: boolean
         True if the slitlet contains a uniform source
     """
-    source_type = force_type if force_type else slitlet.source_type
-
-    if source_type:
+    if source_type := force_type or slitlet.source_type:
         # Assume extended, unless explicitly set to POINT
-        if source_type.upper() == 'POINT':
-            return False
-        else:
-            return True
-    else:
-        # If there's no source type info, default to EXTENDED
-        log.info('SRCTYPE not set for slitlet %d; assuming EXTENDED' % slitlet.slitlet_id)
-        return True
+        return source_type.upper() != 'POINT'
+    # If there's no source type info, default to EXTENDED
+    log.info('SRCTYPE not set for slitlet %d; assuming EXTENDED' % slitlet.slitlet_id)
+    return True

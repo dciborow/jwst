@@ -88,14 +88,14 @@ def prune_duplicate_associations(asns):
 
     """
     ordered_asns = sort_by_candidate(asns)
-    pruned = list()
+    pruned = []
     while True:
         try:
             original = ordered_asns.pop()
         except IndexError:
             break
         pruned.append(original)
-        to_prune = list()
+        to_prune = []
         for asn in ordered_asns:
             try:
                 compare_product_membership(original['products'][0], asn['products'][0])
@@ -142,7 +142,7 @@ def prune_duplicate_products(asns):
             to_prune[product_name].append(asn)
 
     dup_count = 0
-    for product_name, asns_to_prune in to_prune.items():
+    for asns_to_prune in to_prune.values():
         asns_to_prune = sort_by_candidate(asns_to_prune)
         for asn in asns_to_prune[1:]:
             if config.DEBUG:

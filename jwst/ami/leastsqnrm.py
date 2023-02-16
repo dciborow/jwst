@@ -55,14 +55,11 @@ def rotatevectors(vectors, thetarad):
         rotated vectors
     """
     c, s = (np.cos(thetarad), np.sin(thetarad))
-    ctrs_rotated = []
-    for vector in vectors:
-        ctrs_rotated.append([c * vector[0] - s * vector[1],
-                             s * vector[0] + c * vector[1]])
-
-    rot_vectors = np.array(ctrs_rotated)
-
-    return rot_vectors
+    ctrs_rotated = [
+        [c * vector[0] - s * vector[1], s * vector[0] + c * vector[1]]
+        for vector in vectors
+    ]
+    return np.array(ctrs_rotated)
 
 
 def mas2rad(mas):
@@ -82,8 +79,7 @@ def mas2rad(mas):
         angle in radians
     """
 
-    rad = mas * (10**(-3)) / (3600 * 180 / np.pi)
-    return rad
+    return mas * (10**(-3)) / (3600 * 180 / np.pi)
 
 
 def rad2mas(rad):
@@ -102,9 +98,7 @@ def rad2mas(rad):
     mas: float
         input angle in milli arc sec
     """
-    mas = rad * (3600. * 180 / np.pi) * 10.**3
-
-    return mas
+    return rad * (3600. * 180 / np.pi) * 10.**3
 
 
 def sin2deltapistons(coeffs):
@@ -160,10 +154,7 @@ def cos2deltapistons(coeffs):
 
     delta = np.zeros(asize)
     for q in range(asize):
-        if coeffs[2 * q + 2] < 0:
-            sgn = -1
-        else:
-            sgn = 1
+        sgn = -1 if coeffs[2 * q + 2] < 0 else 1
         delta[q] = sgn * np.arccos(coeffs[2 * q + 1]) / (np.pi * 2.0)
 
     return delta
@@ -215,9 +206,7 @@ def primarybeam(kx, ky):
 
     pb = pb.transpose()
 
-    env_int = pb * pb.conj()
-
-    return env_int
+    return pb * pb.conj()
 
 
 def hexpb():
@@ -257,10 +246,16 @@ def ffc(kx, ky):
     cos_array: 2D float array
         cosine terms of analytic model
     """
-    cos_array = 2 * np.cos(2 * np.pi * ffc.pitch *
-                           ((kx - ffc.offx) * (ffc.ri[0] - ffc.rj[0]) +
-                            (ky - ffc.offy) * (ffc.ri[1] - ffc.rj[1])) / ffc.lam)
-    return cos_array
+    return 2 * np.cos(
+        2
+        * np.pi
+        * ffc.pitch
+        * (
+            (kx - ffc.offx) * (ffc.ri[0] - ffc.rj[0])
+            + (ky - ffc.offy) * (ffc.ri[1] - ffc.rj[1])
+        )
+        / ffc.lam
+    )
 
 
 def ffs(kx, ky):
@@ -279,11 +274,16 @@ def ffs(kx, ky):
     sin_array: 2D float array
         sine terms of analytic model
     """
-    sin_array = -2 * np.sin(2 * np.pi * ffs.pitch *
-                            ((kx - ffs.offx) * (ffs.ri[0] - ffs.rj[0]) +
-                             (ky - ffs.offy) * (ffs.ri[1] - ffs.rj[1])) / ffs.lam)
-
-    return sin_array
+    return -2 * np.sin(
+        2
+        * np.pi
+        * ffs.pitch
+        * (
+            (kx - ffs.offx) * (ffs.ri[0] - ffs.rj[0])
+            + (ky - ffs.offy) * (ffs.ri[1] - ffs.rj[1])
+        )
+        / ffs.lam
+    )
 
 
 def model_array(ctrs, lam, oversample, pitch, fov, d,
@@ -388,9 +388,8 @@ def model_array(ctrs, lam, oversample, pitch, fov, d,
                 alist = np.append(alist, j + i + 1)
     alist = alist.reshape(len(alist) // 2, 2)
 
-    ffmodel = []
-    ffmodel.append(ffc.N * np.ones(ffc.size))
-    for q, r in enumerate(alist):
+    ffmodel = [ffc.N * np.ones(ffc.size)]
+    for r in alist:
         # r[0] and r[1] are holes i and j, x-coord: 0, y-coord: 1
         ffc.ri = ctrs[int(r[0])]
         ffc.rj = ctrs[int(r[1])]

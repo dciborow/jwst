@@ -68,7 +68,7 @@ class NoDataOnDetectorError(StpipeExitException):
 
 def _domain_to_bounding_box(domain):
     # TODO: remove this when domain is completely removed
-    bb = tuple([(item['lower'], item['upper']) for item in domain])
+    bb = tuple((item['lower'], item['upper']) for item in domain)
     if len(bb) == 1:
         bb = bb[0]
     return bb
@@ -264,14 +264,13 @@ def wcs_from_footprints(dmodels, refmodel=None, transform=None, bounding_box=Non
     if not isiterable(wcslist):
         raise ValueError("Expected 'wcslist' to be an iterable of WCS objects.")
 
-    if not all([isinstance(w, WCS) for w in wcslist]):
+    if not all(isinstance(w, WCS) for w in wcslist):
         raise TypeError("All items in wcslist are to be instances of gwcs.WCS.")
 
     if refmodel is None:
         refmodel = dmodels[0]
-    else:
-        if not isinstance(refmodel, DataModel):
-            raise TypeError("Expected refmodel to be an instance of DataModel.")
+    elif not isinstance(refmodel, DataModel):
+        raise TypeError("Expected refmodel to be an instance of DataModel.")
 
     fiducial = compute_fiducial(wcslist, bb)
     if crval is not None:
@@ -482,8 +481,7 @@ def subarray_transform(input_model):
         # the case of a full frame observation
         return None
     else:
-        subarray2full = tr_xstart & tr_ystart
-        return subarray2full
+        return tr_xstart & tr_ystart
 
 
 def not_implemented_mode(input_model, ref, slit_y_range=None):
@@ -534,8 +532,6 @@ def get_object_info(catalog_name=None):
         log.error(err_text)
         raise TypeError(err_text)
 
-    objects = []
-
     # validate that the expected columns are there
     required_fields = set(SkyObject()._fields)
 
@@ -550,27 +546,22 @@ def get_object_info(catalog_name=None):
         log.error(err_text)
         raise AttributeError
 
-    # The columns are named sky_bbox_ll, sky_bbox_ul, sky_bbox_lr,
-    # and sky_bbox_ur, each of which is a SkyCoord (i.e. RA & Dec & frame) at
-    # one corner of the minimal bounding box. There will also be a sky_bbox
-    # property as a 4-tuple of SkyCoord, but that is not serializable
-    # (hence, the four separate columns).
-
-    for row in catalog:
-        objects.append(SkyObject(label=row['label'],
-                                 xcentroid=row['xcentroid'],
-                                 ycentroid=row['ycentroid'],
-                                 sky_centroid=row['sky_centroid'],
-                                 isophotal_abmag=row['isophotal_abmag'],
-                                 isophotal_abmag_err=row['isophotal_abmag_err'],
-                                 sky_bbox_ll=row['sky_bbox_ll'],
-                                 sky_bbox_lr=row['sky_bbox_lr'],
-                                 sky_bbox_ul=row['sky_bbox_ul'],
-                                 sky_bbox_ur=row['sky_bbox_ur'],
-                                 is_extended=row['is_extended']
-                                 )
-                       )
-    return objects
+    return [
+        SkyObject(
+            label=row['label'],
+            xcentroid=row['xcentroid'],
+            ycentroid=row['ycentroid'],
+            sky_centroid=row['sky_centroid'],
+            isophotal_abmag=row['isophotal_abmag'],
+            isophotal_abmag_err=row['isophotal_abmag_err'],
+            sky_bbox_ll=row['sky_bbox_ll'],
+            sky_bbox_lr=row['sky_bbox_lr'],
+            sky_bbox_ul=row['sky_bbox_ul'],
+            sky_bbox_ur=row['sky_bbox_ur'],
+            is_extended=row['is_extended'],
+        )
+        for row in catalog
+    ]
 
 
 def create_grism_bbox(input_model,
@@ -708,136 +699,138 @@ def _create_grism_bbox(input_model, mmag_extract=None, wfss_extract_half_height=
 
     grism_objects = []  # the return list of GrismObjects
     for obj in skyobject_list:
-        if obj.isophotal_abmag is not None:
-            if obj.isophotal_abmag < mmag_extract:
-                # could add logic to ignore object if too far off image,
+        if (
+            obj.isophotal_abmag is not None
+            and obj.isophotal_abmag < mmag_extract
+        ):
+            # could add logic to ignore object if too far off image,
 
-                # save the image frame center of the object
-                # takes in ra, dec, wavelength, order but wave and order
-                # don't get used until the detector->grism_detector transform
-                xcenter, ycenter, _, _ = sky_to_detector(obj.sky_centroid.icrs.ra.value,
-                                                         obj.sky_centroid.icrs.dec.value,
-                                                         1, 1)
+            # save the image frame center of the object
+            # takes in ra, dec, wavelength, order but wave and order
+            # don't get used until the detector->grism_detector transform
+            xcenter, ycenter, _, _ = sky_to_detector(obj.sky_centroid.icrs.ra.value,
+                                                     obj.sky_centroid.icrs.dec.value,
+                                                     1, 1)
 
-                order_bounding = {}
-                waverange = {}
-                partial_order = {}
-                for order in wavelength_range:
-                    # range_select = [(x[2], x[3]) for x in wavelengthrange if (x[0] == order and x[1] == filter_name)]
-                    # The orders of the bounding box in the non-dispersed image
-                    # drive the extraction extent. The location of the min and
-                    # max wavelengths for each order are used to get the
-                    # location of the +/- sides of the bounding box in the
-                    # grism image
-                    lmin, lmax = wavelength_range[order]
-                    ra = np.array([obj.sky_bbox_ll.ra.value, obj.sky_bbox_lr.ra.value,
-                                   obj.sky_bbox_ul.ra.value, obj.sky_bbox_ur.ra.value])
-                    dec = np.array([obj.sky_bbox_ll.dec.value, obj.sky_bbox_lr.dec.value,
-                                    obj.sky_bbox_ul.dec.value, obj.sky_bbox_ur.dec.value])
-                    x1, y1, _, _, _ = sky_to_grism(ra, dec, [lmin] * 4, [order] * 4)
-                    x2, y2, _, _, _ = sky_to_grism(ra, dec, [lmax] * 4, [order] * 4)
+            order_bounding = {}
+            waverange = {}
+            partial_order = {}
+            for order in wavelength_range:
+                # range_select = [(x[2], x[3]) for x in wavelengthrange if (x[0] == order and x[1] == filter_name)]
+                # The orders of the bounding box in the non-dispersed image
+                # drive the extraction extent. The location of the min and
+                # max wavelengths for each order are used to get the
+                # location of the +/- sides of the bounding box in the
+                # grism image
+                lmin, lmax = wavelength_range[order]
+                ra = np.array([obj.sky_bbox_ll.ra.value, obj.sky_bbox_lr.ra.value,
+                               obj.sky_bbox_ul.ra.value, obj.sky_bbox_ur.ra.value])
+                dec = np.array([obj.sky_bbox_ll.dec.value, obj.sky_bbox_lr.dec.value,
+                                obj.sky_bbox_ul.dec.value, obj.sky_bbox_ur.dec.value])
+                x1, y1, _, _, _ = sky_to_grism(ra, dec, [lmin] * 4, [order] * 4)
+                x2, y2, _, _, _ = sky_to_grism(ra, dec, [lmax] * 4, [order] * 4)
 
-                    xstack = np.hstack([x1, x2])
-                    ystack = np.hstack([y1, y2])
+                xstack = np.hstack([x1, x2])
+                ystack = np.hstack([y1, y2])
 
-                    # Subarrays are only allowed in nircam tsgrism mode. The polynomial transforms
-                    # only work with the full frame coordinates. The code here is called during extract_2d,
-                    # and is creating bounding boxes which should be in the full frame coordinates, it just
-                    # uses the input catalog and the magnitude to limit the objects that need bounding boxes.
+                # Subarrays are only allowed in nircam tsgrism mode. The polynomial transforms
+                # only work with the full frame coordinates. The code here is called during extract_2d,
+                # and is creating bounding boxes which should be in the full frame coordinates, it just
+                # uses the input catalog and the magnitude to limit the objects that need bounding boxes.
 
-                    # Tsgrism is always supposed to have the source object at the same pixel, and that is
-                    # hardcoded into the transforms. At least a while ago, the 2d extraction for tsgrism mode
-                    # didn't call this bounding box code. So I think it's safe to leave the subarray
-                    # subtraction out, i.e. do not subtract x/ystart.
+                # Tsgrism is always supposed to have the source object at the same pixel, and that is
+                # hardcoded into the transforms. At least a while ago, the 2d extraction for tsgrism mode
+                # didn't call this bounding box code. So I think it's safe to leave the subarray
+                # subtraction out, i.e. do not subtract x/ystart.
 
-                    xmin = np.nanmin(xstack)
-                    xmax = np.nanmax(xstack)
-                    ymin = np.nanmin(ystack)
-                    ymax = np.nanmax(ystack)
+                xmin = np.nanmin(xstack)
+                xmax = np.nanmax(xstack)
+                ymin = np.nanmin(ystack)
+                ymax = np.nanmax(ystack)
 
-                    if wfss_extract_half_height is not None and not obj.is_extended:
-                        if input_model.meta.wcsinfo.dispersion_direction == 2:
-                            ra_center, dec_center = obj.sky_centroid.ra.value, obj.sky_centroid.dec.value
-                            center, _, _, _, _ = sky_to_grism(ra_center, dec_center, (lmin + lmax) / 2, order)
-                            xmin = center - wfss_extract_half_height
-                            xmax = center + wfss_extract_half_height
-                        elif input_model.meta.wcsinfo.dispersion_direction == 1:
-                            ra_center, dec_center = obj.sky_centroid.ra.value, obj.sky_centroid.dec.value
-                            _, center, _, _, _ = sky_to_grism(ra_center, dec_center, (lmin + lmax) / 2, order)
-                            ymin = center - wfss_extract_half_height
-                            ymax = center + wfss_extract_half_height
-                        else:
-                            raise ValueError("Cannot determine dispersion direction.")
-
-                    # Convert floating-point corner values to whole pixel indexes
-                    xmin = gwutils._toindex(xmin)
-                    xmax = gwutils._toindex(xmax)
-                    ymin = gwutils._toindex(ymin)
-                    ymax = gwutils._toindex(ymax)
-
-                    # Don't add objects and orders that are entirely off the detector.
-                    # "partial_order" marks objects that are near enough to the detector
-                    # edge to have some spectrum on the detector.
-                    # This is useful because the catalog often is created from a resampled direct
-                    # image that is bigger than the detector FOV for a single grism exposure.
-                    exclude = False
-                    ispartial = False
-
-                    # Here we check to ensure that the extraction region `pts`
-                    # has at least two pixels of width in the dispersion
-                    # direction, and one in the cross-dispersed direction when
-                    # placed into the subarray extent.
-                    pts = np.array([[ymin, xmin], [ymax, xmax]])
-                    subarr_extent = np.array([[0, 0],
-                                             [input_model.meta.subarray.ysize - 1,
-                                              input_model.meta.subarray.xsize - 1]])
-
-                    if input_model.meta.wcsinfo.dispersion_direction == 1:
-                        # X-axis is dispersion direction
-                        disp_col = 1
-                        xdisp_col = 0
+                if wfss_extract_half_height is not None and not obj.is_extended:
+                    if input_model.meta.wcsinfo.dispersion_direction == 2:
+                        ra_center, dec_center = obj.sky_centroid.ra.value, obj.sky_centroid.dec.value
+                        center, _, _, _, _ = sky_to_grism(ra_center, dec_center, (lmin + lmax) / 2, order)
+                        xmin = center - wfss_extract_half_height
+                        xmax = center + wfss_extract_half_height
+                    elif input_model.meta.wcsinfo.dispersion_direction == 1:
+                        ra_center, dec_center = obj.sky_centroid.ra.value, obj.sky_centroid.dec.value
+                        _, center, _, _, _ = sky_to_grism(ra_center, dec_center, (lmin + lmax) / 2, order)
+                        ymin = center - wfss_extract_half_height
+                        ymax = center + wfss_extract_half_height
                     else:
-                        # Y-axis is dispersion direction
-                        disp_col = 0
-                        xdisp_col = 1
+                        raise ValueError("Cannot determine dispersion direction.")
 
-                    dispaxis_check = (pts[1, disp_col] - subarr_extent[0, disp_col] > 0) and \
-                                     (subarr_extent[1, disp_col] - pts[0, disp_col] > 0)
-                    xdispaxis_check = (pts[1, xdisp_col] - subarr_extent[0, xdisp_col] >= 0) and \
-                                      (subarr_extent[1, xdisp_col] - pts[0, xdisp_col] >= 0)
+                # Convert floating-point corner values to whole pixel indexes
+                xmin = gwutils._toindex(xmin)
+                xmax = gwutils._toindex(xmax)
+                ymin = gwutils._toindex(ymin)
+                ymax = gwutils._toindex(ymax)
 
-                    contained = dispaxis_check and xdispaxis_check
+                # Don't add objects and orders that are entirely off the detector.
+                # "partial_order" marks objects that are near enough to the detector
+                # edge to have some spectrum on the detector.
+                # This is useful because the catalog often is created from a resampled direct
+                # image that is bigger than the detector FOV for a single grism exposure.
+                exclude = False
+                ispartial = False
 
-                    inidx = np.all(np.logical_and(subarr_extent[0] <= pts, pts <= subarr_extent[1]), axis=1)
+                # Here we check to ensure that the extraction region `pts`
+                # has at least two pixels of width in the dispersion
+                # direction, and one in the cross-dispersed direction when
+                # placed into the subarray extent.
+                pts = np.array([[ymin, xmin], [ymax, xmax]])
+                subarr_extent = np.array([[0, 0],
+                                         [input_model.meta.subarray.ysize - 1,
+                                          input_model.meta.subarray.xsize - 1]])
 
-                    if not contained:
-                        exclude = True
-                        log.info("Excluding off-image object: {}, order {}".format(obj.label, order))
-                    elif contained >= 1:
-                        outbox = pts[np.logical_not(inidx)]
-                        if len(outbox) > 0:
-                            ispartial = True
-                            log.info("Partial order on detector for obj: {} order: {}".format(obj.label, order))
+                if input_model.meta.wcsinfo.dispersion_direction == 1:
+                    # X-axis is dispersion direction
+                    disp_col = 1
+                    xdisp_col = 0
+                else:
+                    # Y-axis is dispersion direction
+                    disp_col = 0
+                    xdisp_col = 1
 
-                    if not exclude:
-                        order_bounding[order] = ((ymin, ymax), (xmin, xmax))
-                        waverange[order] = ((lmin, lmax))
-                        partial_order[order] = ispartial
+                dispaxis_check = (pts[1, disp_col] - subarr_extent[0, disp_col] > 0) and \
+                                 (subarr_extent[1, disp_col] - pts[0, disp_col] > 0)
+                xdispaxis_check = (pts[1, xdisp_col] - subarr_extent[0, xdisp_col] >= 0) and \
+                                  (subarr_extent[1, xdisp_col] - pts[0, xdisp_col] >= 0)
 
-                if len(order_bounding) > 0:
-                    grism_objects.append(GrismObject(sid=obj.label,
-                                                     order_bounding=order_bounding,
-                                                     sky_centroid=obj.sky_centroid,
-                                                     partial_order=partial_order,
-                                                     waverange=waverange,
-                                                     sky_bbox_ll=obj.sky_bbox_ll,
-                                                     sky_bbox_lr=obj.sky_bbox_lr,
-                                                     sky_bbox_ul=obj.sky_bbox_ul,
-                                                     sky_bbox_ur=obj.sky_bbox_ur,
-                                                     xcentroid=xcenter,
-                                                     ycentroid=ycenter,
-                                                     is_extended=obj.is_extended,
-                                                     isophotal_abmag=obj.isophotal_abmag))
+                contained = dispaxis_check and xdispaxis_check
+
+                inidx = np.all(np.logical_and(subarr_extent[0] <= pts, pts <= subarr_extent[1]), axis=1)
+
+                if not contained:
+                    exclude = True
+                    log.info(f"Excluding off-image object: {obj.label}, order {order}")
+                elif contained >= 1:
+                    outbox = pts[np.logical_not(inidx)]
+                    if len(outbox) > 0:
+                        ispartial = True
+                        log.info(f"Partial order on detector for obj: {obj.label} order: {order}")
+
+                if not exclude:
+                    order_bounding[order] = ((ymin, ymax), (xmin, xmax))
+                    waverange[order] = ((lmin, lmax))
+                    partial_order[order] = ispartial
+
+            if order_bounding:
+                grism_objects.append(GrismObject(sid=obj.label,
+                                                 order_bounding=order_bounding,
+                                                 sky_centroid=obj.sky_centroid,
+                                                 partial_order=partial_order,
+                                                 waverange=waverange,
+                                                 sky_bbox_ll=obj.sky_bbox_ll,
+                                                 sky_bbox_lr=obj.sky_bbox_lr,
+                                                 sky_bbox_ul=obj.sky_bbox_ul,
+                                                 sky_bbox_ur=obj.sky_bbox_ur,
+                                                 xcentroid=xcenter,
+                                                 ycentroid=ycenter,
+                                                 is_extended=obj.is_extended,
+                                                 isophotal_abmag=obj.isophotal_abmag))
 
     # At this point we have a list of grism objects limited to
     # isophotal_abmag < mmag_extract. We now need to further restrict
@@ -857,7 +850,7 @@ def _create_grism_bbox(input_model, mmag_extract=None, wfss_extract_half_height=
         del grism_objects
 
     log.info(f"Total of {len(final_objects)} grism objects defined")
-    if len(final_objects) == 0:
+    if not final_objects:
         log.warning("No grism objects saved; check catalog or step params")
 
     return final_objects
@@ -894,9 +887,7 @@ def transform_bbox_from_shape(shape):
     bbox : tuple
         Bounding box in y, x order.
     """
-    bbox = ((-0.5, shape[-2] - 0.5),
-            (-0.5, shape[-1] - 0.5))
-    return bbox
+    return (-0.5, shape[-2] - 0.5), (-0.5, shape[-1] - 0.5)
 
 
 def wcs_bbox_from_shape(shape):
@@ -913,9 +904,7 @@ def wcs_bbox_from_shape(shape):
     bbox : tuple
         Bounding box in x, y order.
     """
-    bbox = ((-0.5, shape[-1] - 0.5),
-            (-0.5, shape[-2] - 0.5))
-    return bbox
+    return (-0.5, shape[-1] - 0.5), (-0.5, shape[-2] - 0.5)
 
 
 def bounding_box_from_subarray(input_model):
@@ -945,8 +934,7 @@ def bounding_box_from_subarray(input_model):
     if input_model.meta.subarray.ysize is not None:
         bb_yend = input_model.meta.subarray.ysize - 0.5
 
-    bbox = ((bb_ystart, bb_yend), (bb_xstart, bb_xend))
-    return bbox
+    return (bb_ystart, bb_yend), (bb_xstart, bb_xend)
 
 
 def update_s_region_imaging(model):
@@ -1061,7 +1049,7 @@ def update_s_region_keyword(model, footprint):
         log.info("There are NaNs in s_region, S_REGION not updated.")
     else:
         model.meta.wcsinfo.s_region = s_region
-        log.info("Update S_REGION to {}".format(model.meta.wcsinfo.s_region))
+        log.info(f"Update S_REGION to {model.meta.wcsinfo.s_region}")
 
 
 def compute_footprint_nrs_ifu(dmodel, mod):
@@ -1101,9 +1089,7 @@ def compute_footprint_nrs_ifu(dmodel, mod):
     # Construct a list of the transforms between coordinate frames.
     # Set a place holder ``Identity`` transform at index 2 and 3.
     # Update them with slice specific transforms.
-    transforms = [pipe[0].transform]
-    transforms.append(pipe[1].transform[1:])
-    transforms.append(astmodels.Identity(1))
+    transforms = [pipe[0].transform, pipe[1].transform[1:], astmodels.Identity(1)]
     transforms.append(astmodels.Identity(1))
     transforms.extend([step.transform for step in pipe[4:-1]])
 
@@ -1247,9 +1233,7 @@ def in_ifu_slice(slice_wcs, ra, dec, lam):
 
     # Compute the slice X coordinate using the center of the slit.
     SLX, _, _ = slice_wcs.get_transform('slit_frame', 'slicer')(0, 0, 2e-6)
-    onslice_ind = np.isclose(slx, SLX, atol=5e-4)
-
-    return onslice_ind
+    return np.isclose(slx, SLX, atol=5e-4)
 
 
 def update_fits_wcsinfo(datamodel, max_pix_error=0.01, degree=None, npoints=32,
@@ -1405,7 +1389,7 @@ def update_fits_wcsinfo(datamodel, max_pix_error=0.01, degree=None, npoints=32,
         imwcs = datamodel.meta.wcs
 
     # make a copy of kwargs:
-    kwargs = {k: v for k, v in kwargs.items()}
+    kwargs = dict(kwargs)
 
     # override default values for "other parameters":
     max_inv_pix_error = kwargs.pop('max_inv_pix_error', None)
@@ -1496,8 +1480,5 @@ def get_wcs_reference_files(datamodel):
     step = AssignWcsStep()
     for reftype in AssignWcsStep.reference_file_types:
         val = step.get_reference_file(datamodel, reftype)
-        if val.strip() == 'N/A':
-            refs[reftype] = None
-        else:
-            refs[reftype] = val
+        refs[reftype] = None if val.strip() == 'N/A' else val
     return refs

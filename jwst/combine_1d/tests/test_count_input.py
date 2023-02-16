@@ -48,8 +48,6 @@ def test_1c():
 
 def create_input_spectra_1():
 
-    input_spectra = []
-
     # This is for the case that there are four input spectra, each one
     # six pixels long.  The wavelengths are roughly the same in each
     # spectrum.  The differences in wavelength between spectra is small
@@ -66,7 +64,7 @@ def create_input_spectra_1():
                        [2.716, 2.723, 2.729, 2.741]], dtype=np.float64)
 
     spec = [clumps[0, 3], clumps[1, 0], clumps[2, 2], clumps[3, 1], clumps[4, 2], clumps[5, 1]]
-    input_spectra.append(DummySpectra(np.array(spec)))
+    input_spectra = [DummySpectra(np.array(spec))]
     spec = [clumps[0, 0], clumps[1, 3], clumps[2, 0], clumps[3, 3], clumps[4, 0], clumps[5, 2]]
     input_spectra.append(DummySpectra(np.array(spec)))
     spec = [clumps[0, 2], clumps[1, 1], clumps[2, 1], clumps[3, 2], clumps[4, 3], clumps[5, 0]]

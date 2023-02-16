@@ -25,10 +25,10 @@ def test_exposerr():
     for asn in asns:
         any_degraded = False
         for product in asn['products']:
-            any_degraded = any_degraded or any([
+            any_degraded = any_degraded or any(
                 member['exposerr'] not in _EMPTY
                 for member in product['members']
-            ])
+            )
         if any_degraded:
             assert asn['degraded_status'] == _DEGRADED_STATUS_NOTOK
         else:

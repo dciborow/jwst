@@ -43,10 +43,10 @@ def test_level2_tuple():
         assert len(members) == 1
         member = members[0]
         assert os.path.splitext(member['expname'])[0] == product['name']
-        assert member['exptype'] == product['members'][0]['exptype']
+        assert member['exptype'] == member['exptype']
         # make sure '' defaults to 'science'
         if not items[3][1]:
-            assert product['members'][0]['exptype'] == 'science'
+            assert member['exptype'] == 'science'
 
 def test_file_ext():
     """check that the filename extension is correctly appended"""
@@ -72,7 +72,7 @@ def test_level2_from_cmdline(tmpdir):
         '-o', path.strpath,
         '-r', rule,
     ]
-    args = args + inlist
+    args += inlist
     Main.cli(args)
     with open(path.strpath, 'r') as fp:
         asn = load_asn(fp, registry=AssociationRegistry(include_bases=True))
@@ -134,9 +134,7 @@ def test_default_with_type():
         'c': 'somethingelse'
     }
     asn = asn_from_list(
-        [(item, type_) for item, type_ in items.items()],
-        product_name=product_name,
-        with_exptype=True
+        list(items.items()), product_name=product_name, with_exptype=True
     )
     assert asn['asn_rule'] == 'DMS_Level3_Base'
     assert asn['asn_type'] == 'None'
@@ -168,9 +166,7 @@ def test_default_roundtrip():
         'c': 'somethingelse'
     }
     asn = asn_from_list(
-        [(item, type_) for item, type_ in items.items()],
-        product_name=product_name,
-        with_exptype=True
+        list(items.items()), product_name=product_name, with_exptype=True
     )
     name, serialized = asn.dump()
     reloaded = load_asn(serialized)
@@ -205,7 +201,7 @@ def test_cmdline_success(format, tmpdir):
         '--product-name', product_name,
         '--format', format
     ]
-    args = args + inlist
+    args += inlist
     Main.cli(args)
     with open(path.strpath, 'r') as fp:
         asn = load_asn(fp, format=format)
@@ -228,7 +224,7 @@ def test_cmdline_change_rules(tmpdir):
         '-o', path.strpath,
         '-r', rule,
     ]
-    args = args + inlist
+    args += inlist
     Main.cli(args)
     with open(path.strpath, 'r') as fp:
         asn = load_asn(fp, registry=AssociationRegistry(include_bases=True))

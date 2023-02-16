@@ -61,7 +61,7 @@ def create_hdul(detector='NRCALONG', channel='LONG', module='A',
     hdul = fits.HDUList()
     phdu = fits.PrimaryHDU()
     phdu.header['telescop'] = "JWST"
-    phdu.header['filename'] = "test+" + filtername
+    phdu.header['filename'] = f"test+{filtername}"
     phdu.header['instrume'] = 'NIRCAM'
     phdu.header['channel'] = channel
     phdu.header['detector'] = detector
@@ -86,8 +86,7 @@ def create_wfss_wcs(pupil, filtername='F444W'):
     im = ImageModel(hdul)
     ref = get_reference_files(im)
     pipeline = nircam.create_pipeline(im, ref)
-    wcsobj = wcs.WCS(pipeline)
-    return wcsobj
+    return wcs.WCS(pipeline)
 
 
 def create_imaging_wcs():
@@ -95,8 +94,7 @@ def create_imaging_wcs():
     image = ImageModel(hdul)
     ref = get_reference_files(image)
     pipeline = nircam.create_pipeline(image, ref)
-    wcsobj = wcs.WCS(pipeline)
-    return wcsobj
+    return wcs.WCS(pipeline)
 
 
 def create_tso_wcs(filtername=tsgrism_filters[0], subarray="SUBGRISM256"):
@@ -107,8 +105,7 @@ def create_tso_wcs(filtername=tsgrism_filters[0], subarray="SUBGRISM256"):
     im = CubeModel(hdul)
     ref = get_reference_files(im)
     pipeline = nircam.create_pipeline(im, ref)
-    wcsobj = wcs.WCS(pipeline)
-    return wcsobj
+    return wcs.WCS(pipeline)
 
 
 def get_reference_files(datamodel):
@@ -117,11 +114,7 @@ def get_reference_files(datamodel):
     step = AssignWcsStep()
     for reftype in AssignWcsStep.reference_file_types:
         val = step.get_reference_file(datamodel, reftype)
-        if val == 'N/A':
-            refs[reftype] = None
-        else:
-            refs[reftype] = val
-
+        refs[reftype] = None if val == 'N/A' else val
     return refs
 
 
@@ -156,14 +149,14 @@ def test_nircam_wfss_available_frames():
     for p in ['GRISMR', 'GRISMC']:
         wcsobj = create_wfss_wcs(p)
         available_frames = wcsobj.available_frames
-        assert all([a == b for a, b in zip(nircam_wfss_frames, available_frames)])
+        assert all(a == b for a, b in zip(nircam_wfss_frames, available_frames))
 
 
 def test_nircam_tso_available_frames():
     """Make sure that the expected GWCS reference frames for TSO are created."""
     wcsobj = create_tso_wcs()
     available_frames = wcsobj.available_frames
-    assert all([a == b for a, b in zip(nircam_tsgrism_frames, available_frames)])
+    assert all(a == b for a, b in zip(nircam_tsgrism_frames, available_frames))
 
 
 @pytest.mark.parametrize('key', ['xref_sci', 'yref_sci'])
@@ -223,7 +216,7 @@ def test_imaging_frames():
     """Verify the available imaging mode reference frames."""
     wcsobj = create_imaging_wcs()
     available_frames = wcsobj.available_frames
-    assert all([a == b for a, b in zip(nircam_imaging_frames, available_frames)])
+    assert all(a == b for a, b in zip(nircam_imaging_frames, available_frames))
 
 
 @pytest.mark.xfail

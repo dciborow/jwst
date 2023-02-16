@@ -143,21 +143,22 @@ class LoadAsLevel2Asn(LoadAsAssociation):
 
             if file_ext == '.fits':
                 items = [(obj, 'science')]
-                asn = asn_from_list(items, product_name=file_name,
-                                    rule=DMSLevel2bBase, with_exptype=True,
-                                    meta={"asn_pool":"singleton"})
-                return asn
-
-        asn = super(LoadAsLevel2Asn, cls).load(
+                return asn_from_list(
+                    items,
+                    product_name=file_name,
+                    rule=DMSLevel2bBase,
+                    with_exptype=True,
+                    meta={"asn_pool": "singleton"},
+                )
+        return super(LoadAsLevel2Asn, cls).load(
             obj,
             registry=AssociationRegistry(
                 definition_files=[libpath('rules_level2b.py')],
-                include_default=False
+                include_default=False,
             ),
             rule=DMSLevel2bBase,
-            product_name_func=product_name_func
+            product_name_func=product_name_func,
         )
-        return asn
 
     @staticmethod
     def model_product_name(model, *args, **kwargs):
@@ -202,5 +203,5 @@ class LoadAsLevel2Asn(LoadAsAssociation):
         """
         basename, extension = os_path.splitext(os_path.basename(basename))
         if idx > 1:
-            basename = basename + '_' + str(idx)
+            basename = f'{basename}_{str(idx)}'
         return basename

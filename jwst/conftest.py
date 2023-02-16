@@ -80,7 +80,7 @@ def jail(request, tmpdir_factory):
     old_dir = os.getcwd()
     path = request.module.__name__.split('.')[-1]
     if request._parent_request.fixturename is not None:
-        path = path + "_" + request._parent_request.fixturename
+        path = f"{path}_{request._parent_request.fixturename}"
     newpath = tmpdir_factory.mktemp(path)
     os.chdir(str(newpath))
     yield newpath

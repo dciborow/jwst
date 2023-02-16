@@ -46,9 +46,7 @@ def create_pipeline(input_model, reference_files):
     """
     log.debug(f'reference files used in NIRISS WCS pipeline: {reference_files}')
     exp_type = input_model.meta.exposure.type.lower()
-    pipeline = exp_type2transform[exp_type](input_model, reference_files)
-
-    return pipeline
+    return exp_type2transform[exp_type](input_model, reference_files)
 
 
 def niriss_soss_set_input(model, order_number):
@@ -95,11 +93,7 @@ def _niriss_order_bounding_box(input_model, order):
     bbox_y = np.array([-0.5, input_model.meta.subarray.ysize - 0.5])
     bbox_x = np.array([-0.5, input_model.meta.subarray.xsize - 0.5])
 
-    if order == 1:
-        return tuple(bbox_y), tuple(bbox_x)
-    elif order == 2:
-        return tuple(bbox_y), tuple(bbox_x)
-    elif order == 3:
+    if order in [1, 2, 3]:
         return tuple(bbox_y), tuple(bbox_x)
     else:
         raise ValueError(f'Invalid spectral order: {order} provided. Spectral order must be 1, 2, or 3.')
@@ -145,7 +139,9 @@ def niriss_soss(input_model, reference_files):
         target_dec = float(input_model.meta.target.dec)
     except TypeError:
         # There was an error getting the target RA and DEC, so we are not going to continue.
-        raise ValueError('Problem getting the TARG_RA or TARG_DEC from input model {}'.format(input_model))
+        raise ValueError(
+            f'Problem getting the TARG_RA or TARG_DEC from input model {input_model}'
+        )
 
     # Define the frames
     detector = cf.Frame2D(name='detector', axes_order=(0, 1), unit=(u.pix, u.pix))
@@ -208,12 +204,7 @@ def niriss_soss(input_model, reference_files):
                                  [cm_order1, cm_order2, cm_order3]
                                  ).rename('3-order SOSS Model')
 
-    # Define the pipeline based on the frames and models above.
-    pipeline = [(detector, soss_model),
-                (world, None)
-                ]
-
-    return pipeline
+    return [(detector, soss_model), (world, None)]
 
 
 def imaging(input_model, reference_files):
@@ -262,11 +253,12 @@ def imaging(input_model, reference_files):
         distortion.bounding_box = bounding_box_from_subarray(input_model)
 
     tel2sky = pointing.v23tosky(input_model)
-    pipeline = [(detector, distortion),
-                (v2v3, va_corr),
-                (v2v3vacorr, tel2sky),
-                (world, None)]
-    return pipeline
+    return [
+        (detector, distortion),
+        (v2v3, va_corr),
+        (v2v3vacorr, tel2sky),
+        (world, None),
+    ]
 
 
 def imaging_distortion(input_model, reference_files):
@@ -391,7 +383,7 @@ def wfss(input_model, reference_files):
         raise TypeError('The input data model must be an ImageModel.')
 
     # make sure this is a grism image
-    if "NIS_WFSS" != input_model.meta.exposure.type:
+    if input_model.meta.exposure.type != "NIS_WFSS":
         raise ValueError('The input exposure is not NIRISS grism')
 
     # Create the empty detector as a 2D coordinate frame in pixel units
@@ -433,8 +425,9 @@ def wfss(input_model, reference_files):
                                                      ymodels=dispy,
                                                      theta=fwcpos - fwcpos_ref)
     else:
-        raise ValueError("FILTER keyword {} is not valid."
-                         .format(input_model.meta.instrument.filter))
+        raise ValueError(
+            f"FILTER keyword {input_model.meta.instrument.filter} is not valid."
+        )
 
     backward = NIRISSBackwardGrismDispersion(orders,
                                              lmodels=invdispl,
@@ -450,7 +443,9 @@ def wfss(input_model, reference_files):
         pass
     if velosys is not None:
         velocity_corr = velocity_correction(input_model.meta.wcsinfo.velosys)
-        log.info("Added Barycentric velocity correction: {}".format(velocity_corr[1].amplitude.value))
+        log.info(
+            f"Added Barycentric velocity correction: {velocity_corr[1].amplitude.value}"
+        )
         det2det = det2det | Mapping((0, 1, 2, 3)) | Identity(2) & velocity_corr & Identity(1)
 
     # create the pipeline to construct a WCS object for the whole image
@@ -479,7 +474,7 @@ def wfss(input_model, reference_files):
     for cframe, trans in image_pipeline:
         trans = trans & (Identity(2))
         name = cframe.name
-        cframe.name = name + 'spatial'
+        cframe.name = f'{name}spatial'
         spatial_and_spectral = cf.CompositeFrame([cframe, spec], name=name)
         imagepipe.append((spatial_and_spectral, trans))
     imagepipe.append((cf.CompositeFrame([world, spec], name='world'), None))

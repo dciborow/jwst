@@ -130,7 +130,7 @@ def remove(asn, filenames, ignore):
                     del asn['products'][i]
 
 
-    if len(not_found) > 0:
+    if not_found:
         errmsg = "Filenames not found: " + ','.join(not_found)
         warnings.warn(errmsg, AsnFileWarning)
 
@@ -169,9 +169,8 @@ def writer(asn, output_file):
         temp_file = _rename(output_file)
 
     try:
-        fd = open(output_file, 'w')
-        fd.write(serialized)
-        fd.close()
+        with open(output_file, 'w') as fd:
+            fd.write(serialized)
     except:
         if in_place:
             os.rename(temp_file, output_file)
@@ -197,9 +196,8 @@ def _lookup(asn, filename, ignore_suffix=False):
         search_key = basename
 
     for i, product in enumerate(asn['products']):
-        for j, member in  enumerate(product['members']):
-            expname = member.get('expname')
-            if expname:
+        for j, member in enumerate(product['members']):
+            if expname := member.get('expname'):
                 if ignore_suffix:
                     (root, ext) = op.splitext(expname)
                     match_key, separator = suffix.remove_suffix(root)

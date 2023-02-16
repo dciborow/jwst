@@ -246,6 +246,13 @@ class CubeBlot():
         """
         blot_models = ModelContainer()
 
+        # for NIRSPEC wcs information accessed separately for each slice
+        nslices = 30
+        roi_det = 1.0  # Just large enough that we don't get holes
+
+        # end looping over the 30 slices
+        # set up c wrapper for blotting
+        xstart = 0
         for model in self.input_models:
             blot_ysize, blot_xsize = model.shape
             ntotal = blot_ysize * blot_xsize
@@ -259,11 +266,7 @@ class CubeBlot():
             ycenter = np.arange(blot_ysize)
             xcenter = np.arange(blot_xsize)
 
-            # for NIRSPEC wcs information accessed separately for each slice
-            nslices = 30
             log.info('Blotting 30 slices on NIRSPEC detector')
-            roi_det = 1.0  # Just large enough that we don't get holes
-
             for ii in range(nslices):
                 # for each slice pull out the blotted values that actually fall on the slice region
                 # use the bounding box of each slice to determine the slice limits
@@ -286,11 +289,8 @@ class CubeBlot():
                 decmax = np.nanmax(dec) + self.median_skycube.meta.wcsinfo.cdelt2 * 4
                 lam_min = np.nanmin(lam)
                 lam_max = np.nanmax(lam)
-                if ramin < 0:
-                    ramin = 0
-                if ramax > 360:
-                    ramax = 360
-
+                ramin = max(ramin, 0)
+                ramax = min(ramax, 360)
                 use1 = np.logical_and(self.cube_ra >= ramin, self.cube_ra <= ramax)
                 use2 = np.logical_and(self.cube_dec >= decmin, self.cube_dec <= decmax)
                 use3 = np.logical_and(self.cube_wave >= lam_min, self.cube_wave <= lam_max)
@@ -328,9 +328,6 @@ class CubeBlot():
                     y_total = np.concatenate((y_total, yuse))
                     flux_total = np.concatenate((flux_total, flux_use))
 
-            # end looping over the 30 slices
-            # set up c wrapper for blotting
-            xstart = 0
             xsize2 = blot_xsize
 
             result = blot_wrapper(roi_det, blot_xsize, blot_ysize, xstart, xsize2,
